@@ -1,7 +1,7 @@
 -- ============================================================
 --  AdotaPet – Script SQL Completo
 --  IFC Campus Fraiburgo | ADS 3ª Fase | Grupo 2
---  Gustavo Huçulak | Estefani Santos | Gabriel Chagas
+--  Gustavo Huçulak | Estefani Santos 
 -- ============================================================
 
 -- ── Criação / seleção do banco ────────────────────────────────
