@@ -76,6 +76,41 @@ cleanup() {
   fi
 }
 
+wait_for_stop_signal() {
+  if [[ -t 0 ]]; then
+    while true; do
+      if ! kill -0 "$API_PID" >/dev/null 2>&1; then
+        echo "A API foi encerrada."
+        return
+      fi
+
+      if ! kill -0 "$FRONTEND_PID" >/dev/null 2>&1; then
+        echo "O frontend foi encerrado."
+        return
+      fi
+
+      if read -r -t 1 _; then
+        return
+      fi
+    done
+  fi
+
+  echo "Entrada interativa indisponivel. Use Ctrl+C para encerrar."
+  while true; do
+    if ! kill -0 "$API_PID" >/dev/null 2>&1; then
+      echo "A API foi encerrada."
+      return
+    fi
+
+    if ! kill -0 "$FRONTEND_PID" >/dev/null 2>&1; then
+      echo "O frontend foi encerrado."
+      return
+    fi
+
+    sleep 1
+  done
+}
+
 trap cleanup EXIT INT TERM
 
 echo "Iniciando API na porta $API_PORT..."
@@ -95,4 +130,4 @@ echo "Frontend: http://localhost:$FRONTEND_PORT/index.html"
 echo
 echo "Pressione Enter para encerrar API e frontend."
 
-read -r _
+wait_for_stop_signal
