@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title id="title">AdotaPet</title>
+  <rect width="160" height="160" rx="32" fill="#176b63"/>
+  <circle cx="80" cy="92" r="34" fill="#fff7e8"/>
+  <circle cx="47" cy="61" r="17" fill="#fff7e8"/>
+  <circle cx="73" cy="45" r="18" fill="#fff7e8"/>
+  <circle cx="105" cy="48" r="18" fill="#fff7e8"/>
+  <circle cx="124" cy="72" r="16" fill="#fff7e8"/>
+  <path d="M59 97c12 13 30 13 42 0" fill="none" stroke="#176b63" stroke-width="8" stroke-linecap="round"/>
+</svg>

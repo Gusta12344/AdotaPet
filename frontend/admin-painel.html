@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Painel Admin - AdotaPet</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Principal">
+        <a class="brand" href="index.html">
+          <img src="assets/adotapet-mark.svg" alt="">
+          <span>AdotaPet</span>
+        </a>
+        <div class="nav-links">
+          <a href="index.html">Inicio</a>
+          <button id="admin-logout" class="link-button" type="button">Sair</button>
+        </div>
+      </nav>
+    </header>
+
+    <main class="page">
+      <div class="page-title">
+        <p class="overline">Gestao</p>
+        <h1>Painel administrativo</h1>
+        <p class="lead">Cadastre animais e acompanhe a fila pendente por ordem de chegada.</p>
+      </div>
+
+      <div class="admin-layout">
+        <section class="panel" aria-labelledby="animal-form-title">
+          <h2 id="animal-form-title">Cadastrar animal</h2>
+          <form id="animal-form" class="form-grid">
+            <div class="field">
+              <label for="nome">Nome</label>
+              <input id="nome" name="nome" required maxlength="100">
+            </div>
+            <div class="field">
+              <label for="especie">Especie</label>
+              <select id="especie" name="especie" required>
+                <option value="cao">Cao</option>
+                <option value="gato">Gato</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="raca">Raca</label>
+              <input id="raca" name="raca" maxlength="100" placeholder="SRD">
+            </div>
+            <div class="field">
+              <label for="idadeMeses">Idade em meses</label>
+              <input id="idadeMeses" name="idadeMeses" type="number" min="0" step="1" required>
+            </div>
+            <div class="field">
+              <label for="porte">Porte</label>
+              <select id="porte" name="porte" required>
+                <option value="pequeno">Pequeno</option>
+                <option value="medio">Medio</option>
+                <option value="grande">Grande</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="nivelEnergia">Nivel de energia</label>
+              <select id="nivelEnergia" name="nivelEnergia" required>
+                <option value="baixo">Baixo</option>
+                <option value="medio">Medio</option>
+                <option value="alto">Alto</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="protetorId">ID do protetor</label>
+              <input id="protetorId" name="protetorId" type="number" min="1" step="1" required>
+            </div>
+            <label class="checkbox-row">
+              <input name="bomComCriancas" type="checkbox">
+              <span>Bom com criancas</span>
+            </label>
+            <label class="checkbox-row">
+              <input name="bomComAnimais" type="checkbox">
+              <span>Bom com outros animais</span>
+            </label>
+            <label class="checkbox-row">
+              <input name="precisaEspaco" type="checkbox">
+              <span>Precisa de espaco</span>
+            </label>
+            <div class="field field-full">
+              <label for="descricao">Descricao</label>
+              <textarea id="descricao" name="descricao"></textarea>
+            </div>
+            <div class="field-full form-actions">
+              <button class="button" type="submit">Cadastrar animal</button>
+              <p id="animal-feedback" class="feedback" role="status"></p>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel" aria-labelledby="fila-title">
+          <h2 id="fila-title">Fila de adocao</h2>
+          <p id="fila-feedback" class="feedback" role="status"></p>
+          <div id="fila-list" class="queue-list"></div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="js/pages/admin-painel.js"></script>
+  </body>
+</html>

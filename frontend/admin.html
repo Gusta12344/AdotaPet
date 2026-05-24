@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin - AdotaPet</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Principal">
+        <a class="brand" href="index.html">
+          <img src="assets/adotapet-mark.svg" alt="">
+          <span>AdotaPet</span>
+        </a>
+        <div class="nav-links">
+          <a href="index.html">Inicio</a>
+          <a href="cadastro.html">Cadastro</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="page">
+      <div class="page-title">
+        <p class="overline">Area administrativa</p>
+        <h1>Login</h1>
+        <p class="lead">Use o administrador cadastrado no banco para acessar a fila e o cadastro de animais.</p>
+      </div>
+
+      <section class="panel" aria-labelledby="admin-login-title">
+        <h2 id="admin-login-title">Credenciais</h2>
+        <form id="admin-login-form" class="form-grid">
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" autocomplete="username" required>
+          </div>
+          <div class="field">
+            <label for="senha">Senha</label>
+            <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="field-full form-actions">
+            <button class="button" type="submit">Entrar</button>
+            <p id="admin-login-feedback" class="feedback" role="status"></p>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <script type="module" src="js/pages/admin.js"></script>
+  </body>
+</html>

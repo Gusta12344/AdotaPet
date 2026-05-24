@@ -107,7 +107,7 @@ CREATE INDEX idx_sol_data            ON solicitacao_adocao (data_solicitacao);
 INSERT INTO admin (nome, email, senha) VALUES
     ('Administrador AdotaPet',
      'admin@adotapet.com',
-     '$2a$10$7QJ9JjNkmPOGGpANn6gJFuBanJYG2lAmgqhLAZa8j5UZQY3z/mXoO');
+     '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O');
 
 -- ── protetores ────────────────────────────────────────────────
 INSERT INTO protetor (nome, email, telefone) VALUES

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AdotaPet</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Principal">
+        <a class="brand" href="index.html">
+          <img src="assets/adotapet-mark.svg" alt="">
+          <span>AdotaPet</span>
+        </a>
+        <div class="nav-links">
+          <a href="cadastro.html">Cadastro</a>
+          <a href="recomendados.html">Recomendados</a>
+          <a href="admin.html">Admin</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="hero">
+        <div>
+          <h1>A adocao certa comeca pelo perfil certo.</h1>
+          <p class="lead">O AdotaPet conecta adotantes e animais resgatados com recomendacao por compatibilidade, fila justa e gestao administrativa.</p>
+          <div class="actions">
+            <a class="button" href="cadastro.html">Criar perfil</a>
+            <a class="button button-secondary" href="#animais">Ver animais</a>
+          </div>
+        </div>
+        <aside class="hero-panel" aria-label="Resumo do sistema">
+          <div class="hero-art">
+            <img src="assets/adotapet-mark.svg" alt="Marca AdotaPet">
+          </div>
+          <p class="overline">Fluxo do adotante</p>
+          <h2>Cadastro, recomendacao, detalhe e solicitacao em fila.</h2>
+          <p class="muted">O admin acompanha as solicitacoes por ordem de chegada e processa aprovacoes ou recusas.</p>
+        </aside>
+      </section>
+
+      <section id="animais" aria-labelledby="animais-title">
+        <div class="section-header">
+          <h2 id="animais-title">Animais disponiveis</h2>
+          <p class="muted">Previa dos animais retornados por <code>GET /animais</code>.</p>
+        </div>
+        <p id="home-feedback" class="feedback" role="status"></p>
+        <div id="animais-preview" class="grid"></div>
+      </section>
+    </main>
+
+    <script type="module" src="js/pages/index.js"></script>
+  </body>
+</html>

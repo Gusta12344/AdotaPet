@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Recomendados - AdotaPet</title>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <nav class="nav" aria-label="Principal">
+        <a class="brand" href="index.html">
+          <img src="assets/adotapet-mark.svg" alt="">
+          <span>AdotaPet</span>
+        </a>
+        <div class="nav-links">
+          <a href="index.html">Inicio</a>
+          <a href="cadastro.html">Cadastro</a>
+          <a href="admin.html">Admin</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="page">
+      <div class="page-title">
+        <p class="overline">Compatibilidade</p>
+        <h1>Animais recomendados</h1>
+        <p class="lead">Lista ordenada por score calculado pela API para o perfil salvo neste navegador.</p>
+        <p id="recomendados-feedback" class="feedback" role="status"></p>
+      </div>
+
+      <section id="recomendados-list" class="grid" aria-label="Lista de recomendacoes"></section>
+    </main>
+
+    <script type="module" src="js/pages/recomendados.js"></script>
+  </body>
+</html>
