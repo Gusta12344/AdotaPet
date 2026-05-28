@@ -107,6 +107,23 @@ export function buildAnimalPayload(data) {
   return payload;
 }
 
+export function buildAnimalFormData(form) {
+  const source = form?._data || new FormData(form);
+  const payload = buildAnimalPayload(source);
+  const multipart = new FormData();
+
+  for (const [key, value] of Object.entries(payload)) {
+    multipart.append(key, String(value));
+  }
+
+  const files = Array.from(form?.elements?.imagens?.files || []);
+  for (const file of files) {
+    multipart.append("imagens", file);
+  }
+
+  return multipart;
+}
+
 export function buildSolicitacaoPayload(animalId, adotanteId) {
   return {
     animalId: requireInteger("animalId", animalId, { min: 1 }),

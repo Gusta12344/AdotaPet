@@ -1,6 +1,7 @@
 package com.adotapet.backend.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.adotapet.backend.model.Animal;
 import com.adotapet.backend.model.Especie;
@@ -23,7 +24,8 @@ public record AnimalResponse(
         StatusAnimal status,
         LocalDateTime dataCadastro,
         Integer protetorId,
-        String protetorNome
+        String protetorNome,
+        List<String> imagemUrls
 ) {
     public static AnimalResponse fromEntity(Animal animal) {
         return new AnimalResponse(
@@ -41,7 +43,11 @@ public record AnimalResponse(
                 animal.getStatus(),
                 animal.getDataCadastro(),
                 animal.getProtetor().getId(),
-                animal.getProtetor().getNome()
+                animal.getProtetor().getNome(),
+                animal.getImagens()
+                        .stream()
+                        .map(imagem -> imagem.getUrl())
+                        .toList()
         );
     }
 }

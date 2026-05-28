@@ -57,6 +57,18 @@ CREATE TABLE IF NOT EXISTS animal (
 );
 
 -- ── 4. adotante ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS animal_imagem (
+    id          INT           NOT NULL AUTO_INCREMENT,
+    animal_id   INT           NOT NULL,
+    url         VARCHAR(2048) NOT NULL,
+    ordem       INT           NOT NULL DEFAULT 1,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_animal_imagem_animal FOREIGN KEY (animal_id)
+        REFERENCES animal (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS adotante (
     id                    INT          NOT NULL AUTO_INCREMENT,
     nome                  VARCHAR(100) NOT NULL,
@@ -96,6 +108,7 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
 -- ── Índices para performance ──────────────────────────────────
 CREATE INDEX idx_animal_status       ON animal (status);
 CREATE INDEX idx_animal_especie      ON animal (especie);
+CREATE INDEX idx_animal_imagem       ON animal_imagem (animal_id, ordem);
 CREATE INDEX idx_sol_animal_status   ON solicitacao_adocao (animal_id, status);
 CREATE INDEX idx_sol_data            ON solicitacao_adocao (data_solicitacao);
 

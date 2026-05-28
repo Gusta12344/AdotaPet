@@ -1,4 +1,6 @@
 backend/target/
+backend/uploads/
+uploads/
 AdotaPet_Contexto_IA.md
 AdotaPet_Documentacao_Planejamento*.docx
 AdotaPet_ES_Final.docx

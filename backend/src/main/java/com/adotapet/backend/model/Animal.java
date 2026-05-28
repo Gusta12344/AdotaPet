@@ -1,7 +1,10 @@
 package com.adotapet.backend.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,6 +15,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
@@ -66,6 +71,10 @@ public class Animal {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "protetor_id", nullable = false)
     private Protetor protetor;
+
+    @OneToMany(mappedBy = "animal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("ordem ASC, id ASC")
+    private List<AnimalImagem> imagens = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
@@ -190,5 +199,27 @@ public class Animal {
 
     public void setProtetor(Protetor protetor) {
         this.protetor = protetor;
+    }
+
+    public List<AnimalImagem> getImagens() {
+        return imagens;
+    }
+
+    public void setImagens(List<AnimalImagem> imagens) {
+        this.imagens.clear();
+        if (imagens == null) {
+            return;
+        }
+        for (AnimalImagem imagem : imagens) {
+            adicionarImagem(imagem);
+        }
+    }
+
+    public void adicionarImagem(AnimalImagem imagem) {
+        if (imagem == null) {
+            return;
+        }
+        imagem.setAnimal(this);
+        imagens.add(imagem);
     }
 }

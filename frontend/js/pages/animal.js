@@ -1,7 +1,7 @@
 import { api } from "../api.js";
 import { buildSolicitacaoPayload } from "../forms.js";
 import { readAdotanteId, saveLastSolicitacao } from "../state.js";
-import { $, clearNode, element, formatAge, formatBoolean, formatEnum, setFeedback } from "../ui.js";
+import { $, clearNode, element, formatAge, formatBoolean, formatEnum, renderAnimalImage, setFeedback } from "../ui.js";
 
 const detail = $("#animal-detail");
 const feedback = $("#animal-feedback");
@@ -15,6 +15,7 @@ function renderDetail(animal) {
   clearNode(detail);
   detail.append(
     element("section", { className: "detail-panel" }, [
+      renderAnimalImage(animal, { className: "detail-image" }),
       element("div", { className: "detail-heading" }, [
         element("div", {}, [
           element("p", { className: "overline", text: formatEnum(animal.status) }),

@@ -1,6 +1,6 @@
 import { api } from "../api.js";
 import { clearAdminCredentials, readAdminCredentials } from "../auth.js";
-import { buildAnimalPayload, buildSolicitacaoStatusPayload } from "../forms.js";
+import { buildAnimalFormData, buildSolicitacaoStatusPayload } from "../forms.js";
 import { $, clearNode, element, formatEnum, setFeedback } from "../ui.js";
 
 const credentials = readAdminCredentials(sessionStorage);
@@ -24,8 +24,8 @@ animalForm?.addEventListener("submit", async (event) => {
   setFeedback(animalFeedback, "Cadastrando animal...");
 
   try {
-    const payload = buildAnimalPayload(new FormData(animalForm));
-    await api.post("/animais", payload, { auth: true });
+    const payload = buildAnimalFormData(animalForm);
+    await api.postForm("/animais", payload, { auth: true });
     animalForm.reset();
     setFeedback(animalFeedback, "Animal cadastrado com sucesso.", "success");
   } catch (error) {

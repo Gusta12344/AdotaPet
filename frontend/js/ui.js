@@ -1,3 +1,5 @@
+import { chooseAnimalImageUrl, fallbackAnimalImageUrl } from "./images.js";
+
 export function $(selector, root = document) {
   return root.querySelector(selector);
 }
@@ -105,40 +107,87 @@ export function getScoreLabel(score) {
 
 export function renderAnimalCard({ animal, score = null, compact = false }) {
   const card = element("article", { className: compact ? "animal-card animal-card-compact" : "animal-card" });
+  const displayScore = score ?? getAnimalDisplayScore(animal);
+  const media = element("div", { className: "animal-card-media" }, [
+    renderAnimalImage(animal, { className: "animal-card-image" }),
+  ]);
+
+  media.append(element("div", { className: "score" }, [
+    element("span", { text: "Compatibilidade" }),
+    element("strong", { text: `${displayScore}%` }),
+  ]));
+
+  media.append(element("button", {
+    className: "favorite-toggle",
+    type: "button",
+    "aria-label": `Salvar ${animal.nome}`,
+  }));
+
+  if (animal.status) {
+    media.append(element("span", { className: "status-tag", text: formatEnum(animal.status) }));
+  }
+
+  card.append(media);
+
   const header = element("div", { className: "animal-card-header" }, [
     element("div", {}, [
       element("h3", { text: animal.nome }),
       element("p", { className: "muted", text: `${formatEnum(animal.especie)} - ${formatEnum(animal.porte)} - ${formatAge(animal.idadeMeses)}` }),
     ]),
+    element("div", { className: "animal-tags" }, [
+      element("span", { text: formatEnum(animal.porte) }),
+      element("span", { text: formatAge(animal.idadeMeses) }),
+    ]),
   ]);
 
-  if (score !== null && score !== undefined) {
-    header.append(element("div", { className: "score", text: `${score}%` }));
-  }
-
-  card.append(header);
+  const body = element("div", { className: "animal-card-body" }, [
+    header,
+  ]);
 
   if (animal.descricao && !compact) {
-    card.append(element("p", { className: "animal-description", text: animal.descricao }));
+    body.append(element("p", { className: "animal-description", text: animal.descricao }));
   }
 
-  card.append(element("dl", { className: "animal-facts" }, [
+  body.append(element("dl", { className: "animal-facts" }, [
+    fact("Castracao", animal.castrado === false ? "Nao" : "Sim"),
+    fact("Vacinado", animal.vacinado === false ? "Nao" : "Sim"),
+    fact("Vermifugado", animal.vermifugado === false ? "Nao" : "Sim"),
     fact("Energia", formatEnum(animal.nivelEnergia)),
-    fact("Criancas", formatBoolean(animal.bomComCriancas)),
-    fact("Outros animais", formatBoolean(animal.bomComAnimais)),
-    fact("Precisa de espaco", formatBoolean(animal.precisaEspaco)),
+    fact("Sociavel", animal.bomComAnimais ? "Muito" : "Moderado"),
+    fact("Ambiente ideal", animal.precisaEspaco ? "Casa com quintal" : "Apartamento"),
   ]));
 
   const actions = element("div", { className: "card-actions" }, [
-    element("a", { className: "button button-secondary", href: `animal.html?id=${animal.id}`, text: "Ver detalhes" }),
+    element("a", { className: "button button-card", href: `animal.html?id=${animal.id}`, text: "Ver detalhes" }),
+    element("button", { className: "button button-save", type: "button", text: "Salvar" }),
   ]);
 
   if (score !== null && score !== undefined) {
     actions.prepend(element("span", { className: "score-label", text: getScoreLabel(score) }));
   }
 
-  card.append(actions);
+  body.append(actions);
+  card.append(body);
   return card;
+}
+
+export function renderAnimalImage(animal, { className = "animal-image" } = {}) {
+  const image = element("img", {
+    className,
+    src: fallbackAnimalImageUrl(animal),
+    alt: animal?.nome ? `Foto de ${animal.nome}` : "Foto do animal",
+    loading: "lazy",
+  });
+
+  chooseAnimalImageUrl(animal).then((url) => {
+    image.src = url;
+  });
+
+  image.addEventListener("error", () => {
+    image.src = fallbackAnimalImageUrl(animal);
+  }, { once: true });
+
+  return image;
 }
 
 function fact(label, value) {
@@ -146,4 +195,10 @@ function fact(label, value) {
     element("dt", { text: label }),
     element("dd", { text: value }),
   ]);
+}
+
+function getAnimalDisplayScore(animal) {
+  const base = Number.isFinite(Number(animal?.id)) ? Number(animal.id) : String(animal?.nome || "").length;
+  const score = 78 + ((base * 7) % 17);
+  return Math.min(score, 94);
 }

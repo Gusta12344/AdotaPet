@@ -80,12 +80,41 @@ export function createApiClient({
     return parsed;
   }
 
+  async function requestForm(path, { method = "POST", body, auth = false } = {}) {
+    const headers = {};
+    const options = {
+      method,
+      headers,
+      body,
+    };
+
+    if (auth) {
+      headers.Authorization = getAdminAuthorization(storage);
+    }
+
+    const response = await fetchImpl(`${baseUrl}${path}`, options);
+    const parsed = await parseBody(response);
+
+    if (!response.ok) {
+      const message = typeof parsed === "string" ? parsed : getErrorMessage(parsed);
+      throw new ApiError(message, {
+        status: response.status,
+        details: parsed,
+      });
+    }
+
+    return parsed;
+  }
+
   return {
     get(path, options = {}) {
       return request(path, { ...options, method: "GET" });
     },
     post(path, body, options = {}) {
       return request(path, { ...options, method: "POST", body });
+    },
+    postForm(path, body, options = {}) {
+      return requestForm(path, { ...options, method: "POST", body });
     },
     put(path, body, options = {}) {
       return request(path, { ...options, method: "PUT", body });

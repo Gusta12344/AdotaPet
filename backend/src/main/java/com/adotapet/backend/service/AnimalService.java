@@ -11,6 +11,7 @@ import com.adotapet.backend.dto.AnimalResponse;
 import com.adotapet.backend.dto.RecomendacaoAnimalResponse;
 import com.adotapet.backend.model.Adotante;
 import com.adotapet.backend.model.Animal;
+import com.adotapet.backend.model.AnimalImagem;
 import com.adotapet.backend.model.Especie;
 import com.adotapet.backend.model.NivelAtividade;
 import com.adotapet.backend.model.NivelEnergia;
@@ -28,12 +29,14 @@ public class AnimalService {
     private final AnimalRepository animalRepository;
     private final ProtetorRepository protetorRepository;
     private final AdotanteRepository adotanteRepository;
+    private final AnimalImagemStorageService animalImagemStorageService;
 
     public AnimalService(AnimalRepository animalRepository, ProtetorRepository protetorRepository,
-            AdotanteRepository adotanteRepository) {
+            AdotanteRepository adotanteRepository, AnimalImagemStorageService animalImagemStorageService) {
         this.animalRepository = animalRepository;
         this.protetorRepository = protetorRepository;
         this.adotanteRepository = adotanteRepository;
+        this.animalImagemStorageService = animalImagemStorageService;
     }
 
     @Transactional(readOnly = true)
@@ -53,6 +56,16 @@ public class AnimalService {
 
     @Transactional
     public AnimalResponse cadastrar(AnimalRequest request) {
+        return cadastrarComCaminhosDeImagem(request, List.of());
+    }
+
+    @Transactional
+    public AnimalResponse cadastrarComArquivos(AnimalRequest request, List<org.springframework.web.multipart.MultipartFile> imagens) {
+        List<String> caminhos = animalImagemStorageService.salvar(imagens);
+        return cadastrarComCaminhosDeImagem(request, caminhos);
+    }
+
+    private AnimalResponse cadastrarComCaminhosDeImagem(AnimalRequest request, List<String> caminhosImagem) {
         if (request.especie() == Especie.indiferente) {
             throw new RegraNegocioException("Especie do animal deve ser cao, gato ou outro");
         }
@@ -76,6 +89,7 @@ public class AnimalService {
         animal.setDescricao(request.descricao());
         animal.setStatus(StatusAnimal.disponivel);
         animal.setProtetor(protetor);
+        preencherImagens(animal, caminhosImagem);
 
         return AnimalResponse.fromEntity(animalRepository.save(animal));
     }
@@ -103,6 +117,22 @@ public class AnimalService {
     private Animal buscarAnimal(Integer id) {
         return animalRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Animal nao encontrado"));
+    }
+
+    private void preencherImagens(Animal animal, List<String> caminhosImagem) {
+        if (caminhosImagem == null || caminhosImagem.isEmpty()) {
+            return;
+        }
+
+        int ordem = 1;
+        for (String caminhoImagem : caminhosImagem) {
+            String caminho = caminhoImagem == null ? "" : caminhoImagem.trim();
+            if (caminho.isBlank()) {
+                continue;
+            }
+            animal.adicionarImagem(new AnimalImagem(caminho, ordem));
+            ordem++;
+        }
     }
 
     int calcularScore(Adotante adotante, Animal animal) {

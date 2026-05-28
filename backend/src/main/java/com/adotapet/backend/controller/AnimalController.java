@@ -3,6 +3,7 @@ package com.adotapet.backend.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,12 +12,17 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.adotapet.backend.dto.AnimalRequest;
 import com.adotapet.backend.dto.AnimalResponse;
 import com.adotapet.backend.dto.AnimalStatusRequest;
 import com.adotapet.backend.dto.RecomendacaoAnimalResponse;
+import com.adotapet.backend.model.Especie;
+import com.adotapet.backend.model.NivelEnergia;
+import com.adotapet.backend.model.Porte;
 import com.adotapet.backend.service.AnimalService;
 
 import jakarta.validation.Valid;
@@ -47,9 +53,29 @@ public class AnimalController {
         return animalService.recomendarParaAdotante(adotanteId);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<AnimalResponse> cadastrar(@Valid @RequestBody AnimalRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(animalService.cadastrar(request));
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<AnimalResponse> cadastrarComImagens(
+            @RequestParam String nome,
+            @RequestParam Especie especie,
+            @RequestParam(required = false) String raca,
+            @RequestParam Integer idadeMeses,
+            @RequestParam Porte porte,
+            @RequestParam NivelEnergia nivelEnergia,
+            @RequestParam(defaultValue = "false") boolean bomComCriancas,
+            @RequestParam(defaultValue = "false") boolean bomComAnimais,
+            @RequestParam(defaultValue = "false") boolean precisaEspaco,
+            @RequestParam(required = false) String descricao,
+            @RequestParam Integer protetorId,
+            @RequestParam(value = "imagens", required = false) List<MultipartFile> imagens) {
+        AnimalRequest request = new AnimalRequest(nome, especie, raca, idadeMeses, porte, nivelEnergia,
+                bomComCriancas, bomComAnimais, precisaEspaco, descricao, protetorId);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(animalService.cadastrarComArquivos(request, imagens));
     }
 
     @PutMapping("/{id}/status")

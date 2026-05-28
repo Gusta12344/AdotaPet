@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AdotaPet</title>
+    <link rel="icon" type="image/svg+xml" href="assets/adotapet-mark.svg">
     <link rel="stylesheet" href="css/styles.css">
   </head>
   <body>
@@ -11,45 +12,232 @@
       <nav class="nav" aria-label="Principal">
         <a class="brand" href="index.html">
           <img src="assets/adotapet-mark.svg" alt="">
-          <span>AdotaPet</span>
+          <span class="brand-text">Adota<span>Pet</span></span>
         </a>
         <div class="nav-links">
           <a href="cadastro.html">Cadastro</a>
           <a href="recomendados.html">Recomendados</a>
           <a href="admin.html">Admin</a>
         </div>
+        <div class="nav-actions" aria-label="Acoes rapidas">
+          <button class="icon-button has-badge" type="button" aria-label="Notificacoes">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 17H9a4 4 0 0 0 6 0Z"/>
+              <path d="M18 14v-3a6 6 0 1 0-12 0v3l-2 2h16l-2-2Z"/>
+            </svg>
+            <span class="notification-badge">2</span>
+          </button>
+          <a class="favorite-button" href="recomendados.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>
+            </svg>
+            Favoritos
+          </a>
+          <div class="profile-chip" aria-label="Perfil">
+            <span class="profile-avatar" aria-hidden="true"></span>
+            <span>Ola, Mariana</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m7 10 5 5 5-5"/>
+            </svg>
+          </div>
+        </div>
       </nav>
     </header>
 
-    <main class="page">
+    <main class="page home-page">
       <section class="hero">
-        <div>
-          <h1>A adocao certa comeca pelo perfil certo.</h1>
-          <p class="lead">O AdotaPet conecta adotantes e animais resgatados com recomendacao por compatibilidade, fila justa e gestao administrativa.</p>
+        <div class="hero-copy">
+          <p class="welcome-pill">Bem-vindo ao AdotaPet!</p>
+          <h1>Encontre seu novo melhor amigo.</h1>
+          <p class="lead">Crie seu perfil de adotante para receber recomendacoes personalizadas e encontre o pet ideal para sua familia.</p>
           <div class="actions">
-            <a class="button" href="cadastro.html">Criar perfil</a>
-            <a class="button button-secondary" href="#animais">Ver animais</a>
+            <a class="button button-coral" href="cadastro.html">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"/>
+                <path d="M4 21a8 8 0 0 1 16 0"/>
+              </svg>
+              Criar perfil
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14"/>
+                <path d="m13 6 6 6-6 6"/>
+              </svg>
+            </a>
+            <a class="button button-secondary" href="#animais">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="5.5" cy="10.5" r="2"/>
+                <circle cx="9.5" cy="6.5" r="2"/>
+                <circle cx="14.5" cy="6.5" r="2"/>
+                <circle cx="18.5" cy="10.5" r="2"/>
+                <path d="M7 17c1.8-3.2 8.2-3.2 10 0 1 1.8-.3 3.5-2.2 2.7a7.1 7.1 0 0 0-5.6 0C7.3 20.5 6 18.8 7 17Z"/>
+              </svg>
+              Ver animais
+            </a>
+          </div>
+          <div class="adoption-proof" aria-label="Pessoas que adotaram">
+            <div class="avatar-stack" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <p><strong>+2.801</strong> pessoas ja adotaram com a gente</p>
           </div>
         </div>
         <aside class="hero-panel" aria-label="Resumo do sistema">
+          <svg class="hero-doodle hero-heart" viewBox="0 0 80 80" aria-hidden="true">
+            <path d="M40 64S12 49 12 29a14 14 0 0 1 26-7 14 14 0 0 1 26 7C64 49 40 64 40 64Z"/>
+          </svg>
+          <svg class="hero-doodle hero-lines" viewBox="0 0 80 80" aria-hidden="true">
+            <path d="M17 39h20"/>
+            <path d="m23 18 17 10"/>
+            <path d="m23 62 17-10"/>
+          </svg>
           <div class="hero-art">
-            <img src="assets/adotapet-mark.svg" alt="Marca AdotaPet">
+            <img src="assets/hero-pets.png" alt="Cao e gato olhando para a camera">
           </div>
-          <p class="overline">Fluxo do adotante</p>
-          <h2>Cadastro, recomendacao, detalhe e solicitacao em fila.</h2>
-          <p class="muted">O admin acompanha as solicitacoes por ordem de chegada e processa aprovacoes ou recusas.</p>
+          <div class="tip-card">
+            <span class="tip-icon" aria-hidden="true">i</span>
+            <div>
+              <h2>Dica do dia</h2>
+              <p>Pets adotados vivem mais e fazem bem para a saude!</p>
+              <div class="tip-dots" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
         </aside>
       </section>
 
       <section id="animais" aria-labelledby="animais-title">
-        <div class="section-header">
-          <h2 id="animais-title">Animais disponiveis</h2>
-          <p class="muted">Previa dos animais retornados por <code>GET /animais</code>.</p>
+        <div class="section-header animals-header">
+          <div>
+            <p class="section-icon-title">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="5.5" cy="10.5" r="2"/>
+                <circle cx="9.5" cy="6.5" r="2"/>
+                <circle cx="14.5" cy="6.5" r="2"/>
+                <circle cx="18.5" cy="10.5" r="2"/>
+                <path d="M7 17c1.8-3.2 8.2-3.2 10 0 1 1.8-.3 3.5-2.2 2.7a7.1 7.1 0 0 0-5.6 0C7.3 20.5 6 18.8 7 17Z"/>
+              </svg>
+              Animais disponiveis
+            </p>
+            <h2 id="animais-title">Animais disponiveis</h2>
+            <p class="muted">Pets esperando por um lar cheio de amor.</p>
+          </div>
+          <form class="animal-toolbar" aria-label="Filtros dos animais">
+            <label class="filter-field">
+              <span>Tipo</span>
+              <select id="animal-status-filter" name="status">
+                <option value="">Todos</option>
+                <option value="disponivel">Disponiveis</option>
+                <option value="adotado">Adotados</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>Especie</span>
+              <select id="animal-species-filter" name="especie">
+                <option value="">Todas</option>
+                <option value="cao">Cao</option>
+                <option value="gato">Gato</option>
+                <option value="outro">Outro</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>Porte</span>
+              <select id="animal-size-filter" name="porte">
+                <option value="">Todos</option>
+                <option value="pequeno">Pequeno</option>
+                <option value="medio">Medio</option>
+                <option value="grande">Grande</option>
+              </select>
+            </label>
+            <label class="filter-field">
+              <span>Idade</span>
+              <select id="animal-age-filter" name="idade">
+                <option value="">Todas</option>
+                <option value="filhote">Filhote</option>
+                <option value="adulto">Adulto</option>
+                <option value="senior">Senior</option>
+              </select>
+            </label>
+            <label class="search-field">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="m16 16 4 4"/>
+              </svg>
+              <input id="animal-search" name="busca" placeholder="Buscar por nome, especie...">
+            </label>
+            <button class="filter-button" type="reset">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16"/>
+                <path d="M7 12h10"/>
+                <path d="M10 17h4"/>
+              </svg>
+              Filtros
+            </button>
+          </form>
         </div>
         <p id="home-feedback" class="feedback" role="status"></p>
         <div id="animais-preview" class="grid"></div>
+        <button class="more-button" type="button">Ver mais animais</button>
+      </section>
+
+      <section class="benefit-strip" aria-label="Beneficios do AdotaPet">
+        <article>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 4 6v6c0 4.8 3.3 8 8 9 4.7-1 8-4.2 8-9V6l-8-3Z"/>
+            <path d="m9 12 2 2 4-5"/>
+          </svg>
+          <div>
+            <h3>Adocao responsavel</h3>
+            <p>Todos os pets sao avaliados, vacinados, vermifugados e castrados.</p>
+          </div>
+        </article>
+        <article>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21V9"/>
+            <path d="M5 12 12 5l7 7"/>
+            <path d="M8 21h8"/>
+          </svg>
+          <div>
+            <h3>Match inteligente</h3>
+            <p>Algoritmo que sugere pets compativeis com seu perfil e estilo de vida.</p>
+          </div>
+        </article>
+        <article>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 12 5 9a3 3 0 0 1 4-4l3 3 3-3a3 3 0 0 1 4 4l-3 3"/>
+            <path d="M7 13h10"/>
+            <path d="M9 17h6"/>
+          </svg>
+          <div>
+            <h3>Acompanhamento</h3>
+            <p>Suporte da nossa equipe antes e depois da adocao.</p>
+          </div>
+        </article>
+        <article>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="8" cy="8" r="3"/>
+            <circle cx="16" cy="8" r="3"/>
+            <path d="M3 20a5 5 0 0 1 10 0"/>
+            <path d="M11 20a5 5 0 0 1 10 0"/>
+          </svg>
+          <div>
+            <h3>Comunidade</h3>
+            <p>Faca parte de uma comunidade que transforma vidas.</p>
+          </div>
+        </article>
       </section>
     </main>
+
+    <a class="help-button" href="cadastro.html" aria-label="Ajuda">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10Z"/>
+      </svg>
+      Ajuda
+    </a>
 
     <script type="module" src="js/pages/index.js"></script>
   </body>

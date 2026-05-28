@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Painel Admin - AdotaPet</title>
+    <link rel="icon" type="image/svg+xml" href="assets/adotapet-mark.svg">
     <link rel="stylesheet" href="css/styles.css">
   </head>
   <body>
@@ -11,10 +12,11 @@
       <nav class="nav" aria-label="Principal">
         <a class="brand" href="index.html">
           <img src="assets/adotapet-mark.svg" alt="">
-          <span>AdotaPet</span>
+          <span class="brand-text">Adota<span>Pet</span></span>
         </a>
         <div class="nav-links">
           <a href="index.html">Inicio</a>
+          <a href="admin-painel.html" aria-current="page">Painel</a>
           <button id="admin-logout" class="link-button" type="button">Sair</button>
         </div>
       </nav>
@@ -24,7 +26,7 @@
       <div class="page-title">
         <p class="overline">Gestao</p>
         <h1>Painel administrativo</h1>
-        <p class="lead">Cadastre animais e acompanhe a fila pendente por ordem de chegada.</p>
+        <p class="lead">Cadastre animais com imagens, acompanhe solicitacoes pendentes e resolva a fila por ordem de chegada.</p>
       </div>
 
       <div class="admin-layout">
@@ -86,6 +88,10 @@
             <div class="field field-full">
               <label for="descricao">Descricao</label>
               <textarea id="descricao" name="descricao"></textarea>
+            </div>
+            <div class="field field-full">
+              <label for="imagens">Imagens do animal</label>
+              <input id="imagens" name="imagens" type="file" accept="image/png,image/jpeg,image/webp" multiple>
             </div>
             <div class="field-full form-actions">
               <button class="button" type="submit">Cadastrar animal</button>

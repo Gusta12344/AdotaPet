@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 
 import {
   buildAdotantePayload,
+  buildAnimalFormData,
   buildAnimalPayload,
   validateRequiredFields,
 } from "../js/forms.js";
+import {
+  chooseAnimalImageUrl,
+} from "../js/images.js";
 import {
   buildBasicAuthHeader,
   readAdminCredentials,
@@ -26,6 +30,15 @@ import {
 
 function formData(entries) {
   return new Map(entries);
+}
+
+function formElementMock(entries, files = []) {
+  return {
+    _data: formData(entries),
+    elements: {
+      imagens: { files },
+    },
+  };
 }
 
 function storageMock() {
@@ -118,6 +131,71 @@ test("buildAnimalPayload keeps admin-created animals within the API enum contrac
   });
 });
 
+test("buildAnimalFormData appends normalized animal fields and uploaded image files", async () => {
+  const png = new File(["image-bytes"], "mimi.png", { type: "image/png" });
+  const jpg = new File(["image-bytes"], "mimi.jpg", { type: "image/jpeg" });
+  const payload = buildAnimalFormData(formElementMock([
+    ["nome", "Mimi"],
+    ["especie", "gato"],
+    ["raca", "SRD"],
+    ["idadeMeses", "12"],
+    ["porte", "pequeno"],
+    ["nivelEnergia", "baixo"],
+    ["descricao", ""],
+    ["protetorId", "1"],
+  ], [png, jpg]));
+
+  assert.equal(payload.get("nome"), "Mimi");
+  assert.equal(payload.get("raca"), "SRD");
+  assert.equal(payload.get("idadeMeses"), "12");
+  assert.equal(payload.get("bomComCriancas"), "false");
+  assert.equal(payload.getAll("imagens").length, 2);
+  assert.equal(payload.getAll("imagens")[0].name, "mimi.png");
+  assert.equal(payload.getAll("imagens")[1].name, "mimi.jpg");
+});
+
+test("chooseAnimalImageUrl uses a registered animal image before calling random APIs", async () => {
+  const url = await chooseAnimalImageUrl({
+    especie: "cao",
+    imagemUrls: [" /uploads/animais/thor.png "],
+  }, {
+    fetchImpl: async () => {
+      throw new Error("random API should not be called");
+    },
+  });
+
+  assert.equal(url, "http://localhost:8080/uploads/animais/thor.png");
+});
+
+test("chooseAnimalImageUrl fetches a random dog or cat image when the animal has no image", async () => {
+  const dogUrl = await chooseAnimalImageUrl({ especie: "cao", imagemUrls: [] }, {
+    fetchImpl: async (url) => {
+      assert.equal(url, "https://dog.ceo/api/breeds/image/random");
+      return {
+        ok: true,
+        async json() {
+          return { message: "https://images.example.com/dog.jpg" };
+        },
+      };
+    },
+  });
+
+  const catUrl = await chooseAnimalImageUrl({ especie: "gato", imagemUrls: [] }, {
+    fetchImpl: async (url) => {
+      assert.equal(url, "https://api.thecatapi.com/v1/images/search");
+      return {
+        ok: true,
+        async json() {
+          return [{ url: "https://images.example.com/cat.jpg" }];
+        },
+      };
+    },
+  });
+
+  assert.equal(dogUrl, "https://images.example.com/dog.jpg");
+  assert.equal(catUrl, "https://images.example.com/cat.jpg");
+});
+
 test("validateRequiredFields returns only missing required field names", () => {
   const missing = validateRequiredFields({ nome: "Ana", email: "", idadeMeses: 0 }, ["nome", "email", "idadeMeses"]);
 
@@ -184,4 +262,34 @@ test("createApiClient sends JSON requests and converts error responses to ApiErr
   assert.equal(calls[0].options.method, "POST");
   assert.equal(calls[0].options.headers["Content-Type"], "application/json");
   assert.equal(calls[0].options.body, JSON.stringify({ animalId: 1, adotanteId: 2 }));
+});
+
+test("createApiClient sends multipart form data without forcing JSON headers", async () => {
+  const calls = [];
+  const multipart = new FormData();
+  multipart.append("nome", "Mimi");
+  const storage = storageMock();
+  saveAdminCredentials(storage, "admin@adotapet.com", "admin123");
+  const client = createApiClient({
+    baseUrl: "http://localhost:8080",
+    storage,
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        status: 201,
+        async text() {
+          return JSON.stringify({ id: 1 });
+        },
+      };
+    },
+  });
+
+  await client.postForm("/animais", multipart, { auth: true });
+
+  assert.equal(calls[0].url, "http://localhost:8080/animais");
+  assert.equal(calls[0].options.method, "POST");
+  assert.equal(calls[0].options.body, multipart);
+  assert.equal(calls[0].options.headers["Content-Type"], undefined);
+  assert.match(calls[0].options.headers.Authorization, /^Basic /);
 });
