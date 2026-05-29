@@ -12,6 +12,7 @@ import jakarta.validation.constraints.NotNull;
 public record AdotanteRequest(
         @NotBlank String nome,
         @NotBlank String cpf,
+        @NotBlank String senha,
         @NotBlank @Email String email,
         @NotBlank String telefone,
         @NotBlank String endereco,

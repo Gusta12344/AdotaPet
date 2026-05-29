@@ -1,4 +1,6 @@
 import { api } from "../api.js";
+import { enhanceSelectDropdowns } from "../dropdowns.js";
+import { createHeaderAuthController } from "../header-auth.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
 const list = $("#animais-preview");
@@ -9,8 +11,18 @@ const statusFilter = $("#animal-status-filter");
 const speciesFilter = $("#animal-species-filter");
 const sizeFilter = $("#animal-size-filter");
 const ageFilter = $("#animal-age-filter");
+const moreButton = $(".more-button");
+const lessButton = $(".less-button");
+const endMessage = $("#animais-end-message");
 
+const INITIAL_VISIBLE_ANIMALS = 5;
+const ANIMALS_PER_BATCH = 5;
+const COLLAPSE_ANIMATION_MS = 260;
 let allAnimais = [];
+let visibleAnimalCount = INITIAL_VISIBLE_ANIMALS;
+
+enhanceSelectDropdowns(toolbar);
+createHeaderAuthController();
 
 async function loadAnimais() {
   if (!list) {
@@ -21,6 +33,7 @@ async function loadAnimais() {
 
   try {
     allAnimais = await api.get("/animais");
+    resetPagination();
     renderAnimais();
     setFeedback(feedback, "");
   } catch (error) {
@@ -29,16 +42,118 @@ async function loadAnimais() {
 }
 
 function renderAnimais() {
+  removePendingCollapsedCards();
   clearNode(list);
 
   const animais = getFilteredAnimais();
   if (!animais.length) {
     list.append(element("p", { className: "empty-state", text: "Nenhum animal encontrado com esses filtros." }));
+    updatePaginationState(0);
     return;
   }
 
-  for (const animal of animais.slice(0, 5)) {
-    list.append(renderAnimalCard({ animal, compact: true }));
+  visibleAnimalCount = Math.min(visibleAnimalCount, animais.length);
+  const visibleAnimais = animais.slice(0, visibleAnimalCount);
+  appendAnimalCards(visibleAnimais);
+  updatePaginationState(animais.length);
+}
+
+function showMoreAnimais() {
+  removePendingCollapsedCards();
+
+  const animais = getFilteredAnimais();
+  const previousCount = visibleAnimalCount;
+  visibleAnimalCount = Math.min(visibleAnimalCount + ANIMALS_PER_BATCH, animais.length);
+
+  appendAnimalCards(animais.slice(previousCount, visibleAnimalCount), { reveal: true });
+  updatePaginationState(animais.length);
+}
+
+function showLessAnimais() {
+  const animais = getFilteredAnimais();
+  const nextVisibleCount = Math.max(visibleAnimalCount - ANIMALS_PER_BATCH, INITIAL_VISIBLE_ANIMALS);
+
+  if (nextVisibleCount >= visibleAnimalCount) {
+    return;
+  }
+
+  visibleAnimalCount = nextVisibleCount;
+  collapseAnimalCardsFrom(nextVisibleCount);
+  updatePaginationState(animais.length);
+}
+
+function resetPaginationAndRender() {
+  resetPagination();
+  renderAnimais();
+}
+
+function resetPagination() {
+  visibleAnimalCount = INITIAL_VISIBLE_ANIMALS;
+}
+
+function appendAnimalCards(animais, { reveal = false } = {}) {
+  for (const animal of animais) {
+    const card = renderAnimalCard({ animal, compact: true });
+    if (reveal) {
+      addClass(card, "animal-card-reveal");
+    }
+    list.append(card);
+  }
+}
+
+function collapseAnimalCardsFrom(startIndex) {
+  const cards = Array.from(list.children).slice(startIndex);
+  for (const card of cards) {
+    addClass(card, "animal-card-collapse");
+    scheduleRemoval(card);
+  }
+}
+
+function scheduleRemoval(card) {
+  const setTimer = globalThis.window?.setTimeout || globalThis.setTimeout;
+  setTimer(() => {
+    if (card.parentNode === list) {
+      list.removeChild(card);
+    }
+  }, COLLAPSE_ANIMATION_MS);
+}
+
+function removePendingCollapsedCards() {
+  for (const card of Array.from(list.children)) {
+    if (String(card.className || "").includes("animal-card-collapse") && card.parentNode === list) {
+      list.removeChild(card);
+    }
+  }
+}
+
+function addClass(node, className) {
+  if (node.classList) {
+    node.classList.add(className);
+    return;
+  }
+
+  const classes = new Set(String(node.className || "").split(/\s+/).filter(Boolean));
+  classes.add(className);
+  node.className = Array.from(classes).join(" ");
+}
+
+function updatePaginationState(total) {
+  const hasAnimals = total > 0;
+  const allVisible = hasAnimals && visibleAnimalCount >= total;
+
+  if (moreButton) {
+    moreButton.hidden = !hasAnimals || allVisible;
+    moreButton.disabled = !hasAnimals || allVisible;
+  }
+
+  if (lessButton) {
+    lessButton.hidden = !hasAnimals || visibleAnimalCount <= INITIAL_VISIBLE_ANIMALS;
+    lessButton.disabled = !hasAnimals || visibleAnimalCount <= INITIAL_VISIBLE_ANIMALS;
+  }
+
+  if (endMessage) {
+    endMessage.textContent = allVisible ? "Sem mais animais cadastrados." : "";
+    endMessage.hidden = !allVisible;
   }
 }
 
@@ -70,10 +185,12 @@ function normalize(value) {
     .trim();
 }
 
-toolbar?.addEventListener("input", renderAnimais);
-toolbar?.addEventListener("change", renderAnimais);
+toolbar?.addEventListener("input", resetPaginationAndRender);
+toolbar?.addEventListener("change", resetPaginationAndRender);
 toolbar?.addEventListener("reset", () => {
-  window.setTimeout(renderAnimais, 0);
+  window.setTimeout(resetPaginationAndRender, 0);
 });
+moreButton?.addEventListener("click", showMoreAnimais);
+lessButton?.addEventListener("click", showLessAnimais);
 
 loadAnimais();

@@ -11,11 +11,23 @@ import {
   chooseAnimalImageUrl,
 } from "../js/images.js";
 import {
+  enhanceSelectDropdown,
+} from "../js/dropdowns.js";
+import {
+  formatCpfForLogin,
+  getHeaderAuthViewState,
+} from "../js/header-auth.js";
+import {
   buildBasicAuthHeader,
   readAdminCredentials,
   saveAdminCredentials,
   clearAdminCredentials,
 } from "../js/auth.js";
+import {
+  clearCurrentUser,
+  readCurrentUser,
+  saveCurrentUser,
+} from "../js/state.js";
 import {
   formatAge,
   formatBoolean,
@@ -56,10 +68,66 @@ function storageMock() {
   };
 }
 
+class TestElement {
+  constructor(tagName) {
+    this.tagName = tagName;
+    this.children = [];
+    this.attributes = {};
+    this.className = "";
+    this.textContent = "";
+    this.value = "";
+    this.listeners = new Map();
+  }
+
+  append(...children) {
+    for (const child of children) {
+      child.parentNode = this;
+      this.children.push(child);
+    }
+  }
+
+  setAttribute(name, value) {
+    this.attributes[name] = String(value);
+  }
+
+  getAttribute(name) {
+    return this.attributes[name] ?? null;
+  }
+
+  addEventListener(type, handler) {
+    const handlers = this.listeners.get(type) || [];
+    handlers.push(handler);
+    this.listeners.set(type, handlers);
+  }
+
+  dispatchEvent(event) {
+    for (const handler of this.listeners.get(event.type) || []) {
+      handler(event);
+    }
+  }
+
+  click() {
+    this.dispatchEvent({
+      type: "click",
+      currentTarget: this,
+      stopPropagation() {},
+    });
+  }
+}
+
+function documentMock() {
+  return {
+    createElement(tagName) {
+      return new TestElement(tagName);
+    },
+  };
+}
+
 test("buildAdotantePayload normalizes text, booleans and enum values accepted by the API", () => {
   const payload = buildAdotantePayload(formData([
     ["nome", "  Maria Oliveira  "],
     ["cpf", " 111.111.111-11 "],
+    ["senha", " maria123 "],
     ["email", " MARIA@EMAIL.COM "],
     ["telefone", " (47) 99901-0001 "],
     ["endereco", " Rua das Flores, 100 "],
@@ -73,6 +141,7 @@ test("buildAdotantePayload normalizes text, booleans and enum values accepted by
   assert.deepEqual(payload, {
     nome: "Maria Oliveira",
     cpf: "111.111.111-11",
+    senha: "maria123",
     email: "maria@email.com",
     telefone: "(47) 99901-0001",
     endereco: "Rua das Flores, 100",
@@ -90,6 +159,7 @@ test("buildAdotantePayload rejects enum values outside the backend contract", ()
     () => buildAdotantePayload(formData([
       ["nome", "Maria"],
       ["cpf", "111.111.111-11"],
+      ["senha", "maria123"],
       ["email", "maria@email.com"],
       ["telefone", "47999010001"],
       ["endereco", "Rua A"],
@@ -196,6 +266,59 @@ test("chooseAnimalImageUrl fetches a random dog or cat image when the animal has
   assert.equal(catUrl, "https://images.example.com/cat.jpg");
 });
 
+test("chooseAnimalImageUrl reuses cached fallback image URLs without calling random APIs again", async () => {
+  const storage = storageMock();
+  const animal = { id: 10, nome: "Luna", especie: "cao", imagemUrls: [] };
+  const firstUrl = await chooseAnimalImageUrl(animal, {
+    storage,
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        return { message: "https://images.example.com/cached-dog.jpg" };
+      },
+    }),
+  });
+
+  const secondUrl = await chooseAnimalImageUrl(animal, {
+    storage,
+    fetchImpl: async () => {
+      throw new Error("random API should not be called when a cached URL exists");
+    },
+  });
+
+  assert.equal(firstUrl, "https://images.example.com/cached-dog.jpg");
+  assert.equal(secondUrl, "https://images.example.com/cached-dog.jpg");
+});
+
+test("enhanceSelectDropdown opens with animation state and syncs the native select", () => {
+  const field = new TestElement("label");
+  const select = new TestElement("select");
+  select.value = "";
+  select.options = [
+    { value: "", textContent: "Todos" },
+    { value: "disponivel", textContent: "Disponiveis" },
+  ];
+  let changed = false;
+  select.addEventListener("change", () => {
+    changed = true;
+  });
+  field.append(select);
+
+  const dropdown = enhanceSelectDropdown(field, { documentRef: documentMock() });
+  dropdown.button.click();
+
+  assert.match(field.className, /filter-field-open/);
+  assert.equal(dropdown.button.getAttribute("aria-expanded"), "true");
+
+  dropdown.options[1].click();
+
+  assert.equal(select.value, "disponivel");
+  assert.equal(changed, true);
+  assert.equal(dropdown.button.textContent, "Disponiveis");
+  assert.doesNotMatch(field.className, /filter-field-open/);
+  assert.equal(dropdown.button.getAttribute("aria-expanded"), "false");
+});
+
 test("validateRequiredFields returns only missing required field names", () => {
   const missing = validateRequiredFields({ nome: "Ana", email: "", idadeMeses: 0 }, ["nome", "email", "idadeMeses"]);
 
@@ -214,6 +337,71 @@ test("admin credentials are saved only in session-like storage and encoded for B
 
   clearAdminCredentials(storage);
   assert.equal(readAdminCredentials(storage), null);
+});
+
+test("current user session stores only display data for the home header", () => {
+  const storage = storageMock();
+  saveCurrentUser(storage, {
+    id: 4,
+    nome: "  Mariana Costa  ",
+    cpf: " 777.777.777-77 ",
+    email: " MARIANA@EMAIL.COM ",
+    tipo: "adotante",
+    senha: "nao-deve-ser-persistida",
+  });
+
+  assert.deepEqual(readCurrentUser(storage), {
+    id: 4,
+    nome: "Mariana Costa",
+    cpf: "777.777.777-77",
+    email: "mariana@email.com",
+    tipo: "adotante",
+  });
+  assert.doesNotMatch(storage.getItem("adotapet.currentUser"), /nao-deve-ser-persistida/);
+
+  clearCurrentUser(storage);
+  assert.equal(readCurrentUser(storage), null);
+});
+
+test("header auth state hides private actions until the user signs in", () => {
+  assert.deepEqual(getHeaderAuthViewState(null), {
+    isLoggedIn: false,
+    isAdmin: false,
+    loginHidden: false,
+    privateActionsHidden: true,
+    accountHidden: true,
+    adminAreaHidden: true,
+    greeting: "",
+  });
+
+  assert.deepEqual(getHeaderAuthViewState({ nome: "Mariana Costa", tipo: "adotante" }), {
+    isLoggedIn: true,
+    isAdmin: false,
+    loginHidden: true,
+    privateActionsHidden: false,
+    accountHidden: false,
+    adminAreaHidden: true,
+    greeting: "Ola, Mariana Costa",
+  });
+
+  assert.deepEqual(getHeaderAuthViewState({ nome: "Administrador AdotaPet", tipo: "admin" }), {
+    isLoggedIn: true,
+    isAdmin: true,
+    loginHidden: true,
+    privateActionsHidden: false,
+    accountHidden: false,
+    adminAreaHidden: false,
+    greeting: "Ola, Administrador AdotaPet",
+  });
+});
+
+test("formatCpfForLogin masks CPF while the user types", () => {
+  assert.equal(formatCpfForLogin("1"), "1");
+  assert.equal(formatCpfForLogin("1111"), "111.1");
+  assert.equal(formatCpfForLogin("11111111111"), "111.111.111-11");
+  assert.equal(formatCpfForLogin("111.111.111-11"), "111.111.111-11");
+  assert.equal(formatCpfForLogin("11111111111999"), "111.111.111-11");
+  assert.equal(formatCpfForLogin("cpf 111a222b333c44"), "111.222.333-44");
 });
 
 test("format helpers produce readable labels without changing API values", () => {
@@ -235,6 +423,10 @@ test("getErrorMessage prefers API messages and includes field validation details
       nome: "must not be blank",
     },
   }), "Dados invalidos: email - must be a well-formed email address; nome - must not be blank");
+});
+
+test("getErrorMessage uses a readable fallback for unauthorized responses without JSON body", () => {
+  assert.equal(getErrorMessage(null, { status: 401 }), "CPF ou senha invalidos");
 });
 
 test("createApiClient sends JSON requests and converts error responses to ApiError", async () => {

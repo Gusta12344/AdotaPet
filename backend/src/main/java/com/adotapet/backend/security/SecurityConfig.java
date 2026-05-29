@@ -26,6 +26,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/adotantes").permitAll()
                         .requestMatchers(HttpMethod.POST, "/adocoes").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/animais").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/animais/**").hasRole("ADMIN")

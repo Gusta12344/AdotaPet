@@ -21,6 +21,9 @@ public class Admin {
     @Column(nullable = false, unique = true, length = 150)
     private String email;
 
+    @Column(nullable = false, unique = true, length = 14)
+    private String cpf;
+
     @Column(nullable = false, length = 255)
     private String senha;
 
@@ -46,6 +49,14 @@ public class Admin {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
     }
 
     public String getSenha() {

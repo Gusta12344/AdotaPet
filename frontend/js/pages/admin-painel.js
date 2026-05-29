@@ -1,6 +1,7 @@
 import { api } from "../api.js";
 import { clearAdminCredentials, readAdminCredentials } from "../auth.js";
 import { buildAnimalFormData, buildSolicitacaoStatusPayload } from "../forms.js";
+import { clearCurrentUser } from "../state.js";
 import { $, clearNode, element, formatEnum, setFeedback } from "../ui.js";
 
 const credentials = readAdminCredentials(sessionStorage);
@@ -11,12 +12,13 @@ const filaList = $("#fila-list");
 const logout = $("#admin-logout");
 
 if (!credentials) {
-  window.location.href = "admin.html";
+  window.location.href = "index.html";
 }
 
 logout?.addEventListener("click", () => {
   clearAdminCredentials(sessionStorage);
-  window.location.href = "admin.html";
+  clearCurrentUser(sessionStorage);
+  window.location.href = "index.html";
 });
 
 animalForm?.addEventListener("submit", async (event) => {

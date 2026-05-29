@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS admin (
     id            INT          NOT NULL AUTO_INCREMENT,
     nome          VARCHAR(100) NOT NULL,
     email         VARCHAR(150) NOT NULL UNIQUE,
+    cpf           VARCHAR(14)  NOT NULL UNIQUE,
     senha         VARCHAR(255) NOT NULL,           -- hash BCrypt
     PRIMARY KEY (id)
 );
@@ -73,6 +74,7 @@ CREATE TABLE IF NOT EXISTS adotante (
     id                    INT          NOT NULL AUTO_INCREMENT,
     nome                  VARCHAR(100) NOT NULL,
     cpf                   VARCHAR(14)  NOT NULL UNIQUE,           -- formato 000.000.000-00
+    senha                 VARCHAR(255) NOT NULL,                   -- hash BCrypt
     email                 VARCHAR(150) NOT NULL UNIQUE,
     telefone              VARCHAR(20)  NOT NULL,
     endereco              VARCHAR(255) NOT NULL,
@@ -106,21 +108,133 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
 );
 
 -- ── Índices para performance ──────────────────────────────────
-CREATE INDEX idx_animal_status       ON animal (status);
-CREATE INDEX idx_animal_especie      ON animal (especie);
-CREATE INDEX idx_animal_imagem       ON animal_imagem (animal_id, ordem);
-CREATE INDEX idx_sol_animal_status   ON solicitacao_adocao (animal_id, status);
-CREATE INDEX idx_sol_data            ON solicitacao_adocao (data_solicitacao);
+SET @schema_atual = DATABASE();
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'CREATE INDEX idx_animal_status ON animal (status)',
+        'SELECT 1')
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'animal' AND INDEX_NAME = 'idx_animal_status'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'CREATE INDEX idx_animal_especie ON animal (especie)',
+        'SELECT 1')
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'animal' AND INDEX_NAME = 'idx_animal_especie'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem)',
+        'SELECT 1')
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'animal_imagem' AND INDEX_NAME = 'idx_animal_imagem'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status)',
+        'SELECT 1')
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'solicitacao_adocao' AND INDEX_NAME = 'idx_sol_animal_status'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao)',
+        'SELECT 1')
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'solicitacao_adocao' AND INDEX_NAME = 'idx_sol_data'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Migracao leve para bancos ja criados por versoes anteriores do script.
+-- CREATE TABLE IF NOT EXISTS nao adiciona colunas novas em tabelas existentes.
+SET @hash_senha_padrao = '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O';
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'ALTER TABLE admin ADD COLUMN cpf VARCHAR(14) NULL AFTER email',
+        'SELECT 1')
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'admin' AND COLUMN_NAME = 'cpf'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE admin
+SET cpf = '000.000.000-00'
+WHERE email = 'admin@adotapet.com' AND (cpf IS NULL OR cpf = '');
+
+UPDATE admin
+SET cpf = CONCAT('900.000.000-', LPAD(MOD(id, 100), 2, '0'))
+WHERE cpf IS NULL OR cpf = '';
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'ALTER TABLE admin ADD UNIQUE INDEX uk_admin_cpf (cpf)',
+        'SELECT 1')
+    FROM information_schema.STATISTICS
+    WHERE TABLE_SCHEMA = @schema_atual
+      AND TABLE_NAME = 'admin'
+      AND COLUMN_NAME = 'cpf'
+      AND NON_UNIQUE = 0
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+ALTER TABLE admin MODIFY cpf VARCHAR(14) NOT NULL;
+
+SET @sql = (
+    SELECT IF(COUNT(*) = 0,
+        'ALTER TABLE adotante ADD COLUMN senha VARCHAR(255) NULL AFTER cpf',
+        'SELECT 1')
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'adotante' AND COLUMN_NAME = 'senha'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+UPDATE adotante
+SET senha = @hash_senha_padrao
+WHERE senha IS NULL OR senha = '';
+
+ALTER TABLE adotante MODIFY senha VARCHAR(255) NOT NULL;
 
 -- ============================================================
 --  DML — Dados de Exemplo
 -- ============================================================
 
--- ── admin (senha = "admin123" em BCrypt) ─────────────────────
-INSERT INTO admin (nome, email, senha) VALUES
+-- ── admin (cpf 000.000.000-00, senha = "admin123" em BCrypt) ─────────────────────
+INSERT INTO admin (nome, email, cpf, senha) VALUES
     ('Administrador AdotaPet',
      'admin@adotapet.com',
-     '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O');
+     '000.000.000-00',
+     '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O')
+ON DUPLICATE KEY UPDATE
+    nome = VALUES(nome),
+    cpf = VALUES(cpf),
+    senha = VALUES(senha);
 
 -- ── protetores ────────────────────────────────────────────────
 INSERT INTO protetor (nome, email, telefone) VALUES
@@ -170,32 +284,84 @@ VALUES
     -- animal em análise (para testar fluxo)
     ('Duque',  'cao', 'Bulldog Francês',  24,  'pequeno', 'baixo', 1, 1, 0,
      'Duque é calmo, carinhoso e se adapta bem a apartamento.',
-     'em_analise', 1);
+     'em_analise', 1),
+
+    -- mais animais disponíveis para a página inicial
+    ('Luna',   'cao', 'Golden Retriever', 30,  'grande',  'alto',  1, 1, 1,
+     'Luna é dócil, brincalhona e ama passeios longos com a família.',
+     'disponivel', 1),
+
+    ('Nina',   'gato', 'SRD',             14,  'pequeno', 'medio', 1, 1, 0,
+     'Nina é curiosa, sociável e gosta de observar tudo pela janela.',
+     'disponivel', 2),
+
+    ('Tobias', 'cao', 'Beagle',           42,  'medio',   'alto',  1, 1, 0,
+     'Tobias é farejador, animado e combina com tutores ativos.',
+     'disponivel', 3),
+
+    ('Amora',  'gato', 'Persa',           72,  'pequeno', 'baixo', 1, 0, 0,
+     'Amora é tranquila, carinhosa e prefere uma rotina mais calma.',
+     'disponivel', 1),
+
+    ('Bento',  'cao', 'SRD',               7,  'medio',   'medio', 1, 1, 0,
+     'Bento é filhote, aprende rápido e está pronto para crescer em família.',
+     'disponivel', 2),
+
+    ('Frida',  'gato', 'Angorá',          28,  'pequeno', 'medio', 0, 1, 0,
+     'Frida é elegante, independente e convive bem com outros gatos.',
+     'disponivel', 3),
+
+    ('Apolo',  'cao', 'Border Collie',    20,  'medio',   'alto',  1, 1, 1,
+     'Apolo é muito inteligente, precisa de estímulos e adora aprender comandos.',
+     'disponivel', 1),
+
+    ('Cacau',  'cao', 'Shih-tzu',         54,  'pequeno', 'baixo', 1, 1, 0,
+     'Cacau é companheira, calma e se adapta muito bem a apartamento.',
+     'disponivel', 2),
+
+    ('Jade',   'gato', 'SRD',             10,  'pequeno', 'alto',  1, 1, 0,
+     'Jade é filhote, brincalhona e gosta de interagir com pessoas.',
+     'disponivel', 3),
+
+    ('Gaia',   'outro', 'Coelha',         16,  'pequeno', 'medio', 1, 0, 0,
+     'Gaia é uma coelha dócil, limpa e acostumada a ambientes internos.',
+     'disponivel', 1);
 
 -- ── adotantes ─────────────────────────────────────────────────
-INSERT INTO adotante (nome, cpf, email, telefone, endereco,
+-- senha dos adotantes de exemplo = "admin123" em BCrypt
+INSERT INTO adotante (nome, cpf, senha, email, telefone, endereco,
                        tipo_moradia, tem_criancas, tem_outros_animais,
                        nivel_atividade, preferencia_porte, preferencia_especie)
 VALUES
-    ('Maria Oliveira',  '111.111.111-11', 'maria@email.com',  '(47) 99901-0001',
+    ('Maria Oliveira',  '111.111.111-11', '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O', 'maria@email.com',  '(47) 99901-0001',
      'Rua das Flores, 100, Fraiburgo SC',
      'apartamento',       0, 0, 'moderado', 'pequeno',    'gato'),
 
-    ('Carlos Souza',    '222.222.222-22', 'carlos@email.com', '(47) 99901-0002',
+    ('Carlos Souza',    '222.222.222-22', '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O', 'carlos@email.com', '(47) 99901-0002',
      'Av. Principal, 500, Curitibanos SC',
      'casa_com_quintal',  1, 0, 'ativo',    'grande',     'cao'),
 
-    ('Beatriz Lima',    '333.333.333-33', 'beatriz@email.com','(47) 99901-0003',
+    ('Beatriz Lima',    '333.333.333-33', '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O', 'beatriz@email.com','(47) 99901-0003',
      'Rua do Bosque, 22, Campos Novos SC',
      'casa_sem_quintal',  1, 1, 'moderado', 'pequeno',    'indiferente'),
 
-    ('João Pedro Costa','444.444.444-44', 'joao@email.com',   '(47) 99901-0004',
+    ('João Pedro Costa','444.444.444-44', '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O', 'joao@email.com',   '(47) 99901-0004',
      'Rua Norte, 77, Fraiburgo SC',
      'apartamento',       0, 1, 'sedentario','indiferente','gato'),
 
-    ('Fernanda Rocha',  '555.555.555-55', 'fernanda@email.com','(47) 99901-0005',
+    ('Fernanda Rocha',  '555.555.555-55', '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O', 'fernanda@email.com','(47) 99901-0005',
      'Estrada Rural, km 5, Fraiburgo SC',
-     'casa_com_quintal',  0, 0, 'ativo',    'grande',     'cao');
+     'casa_com_quintal',  0, 0, 'ativo',    'grande',     'cao')
+ON DUPLICATE KEY UPDATE
+    senha = VALUES(senha),
+    telefone = VALUES(telefone),
+    endereco = VALUES(endereco),
+    tipo_moradia = VALUES(tipo_moradia),
+    tem_criancas = VALUES(tem_criancas),
+    tem_outros_animais = VALUES(tem_outros_animais),
+    nivel_atividade = VALUES(nivel_atividade),
+    preferencia_porte = VALUES(preferencia_porte),
+    preferencia_especie = VALUES(preferencia_especie);
 
 -- ── solicitações de adoção (fila) ────────────────────────────
 -- Simulando fila para Bolinha: Maria e Beatriz solicitaram

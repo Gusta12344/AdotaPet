@@ -11,7 +11,11 @@ export class ApiError extends Error {
   }
 }
 
-export function getErrorMessage(details) {
+export function getErrorMessage(details, { status = 0 } = {}) {
+  if (status === 401) {
+    return "CPF ou senha invalidos";
+  }
+
   if (!details || typeof details !== "object") {
     return "Nao foi possivel concluir a operacao";
   }
@@ -70,7 +74,7 @@ export function createApiClient({
     const parsed = await parseBody(response);
 
     if (!response.ok) {
-      const message = typeof parsed === "string" ? parsed : getErrorMessage(parsed);
+      const message = typeof parsed === "string" ? parsed : getErrorMessage(parsed, { status: response.status });
       throw new ApiError(message, {
         status: response.status,
         details: parsed,
@@ -96,7 +100,7 @@ export function createApiClient({
     const parsed = await parseBody(response);
 
     if (!response.ok) {
-      const message = typeof parsed === "string" ? parsed : getErrorMessage(parsed);
+      const message = typeof parsed === "string" ? parsed : getErrorMessage(parsed, { status: response.status });
       throw new ApiError(message, {
         status: response.status,
         details: parsed,

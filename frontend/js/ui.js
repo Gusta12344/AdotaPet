@@ -1,4 +1,4 @@
-import { chooseAnimalImageUrl, fallbackAnimalImageUrl } from "./images.js";
+import { chooseAnimalImageUrl, fallbackAnimalImageUrl, getCachedAnimalImageUrl } from "./images.js";
 
 export function $(selector, root = document) {
   return root.querySelector(selector);
@@ -174,7 +174,7 @@ export function renderAnimalCard({ animal, score = null, compact = false }) {
 export function renderAnimalImage(animal, { className = "animal-image" } = {}) {
   const image = element("img", {
     className,
-    src: fallbackAnimalImageUrl(animal),
+    src: getCachedAnimalImageUrl(animal) || fallbackAnimalImageUrl(animal),
     alt: animal?.nome ? `Foto de ${animal.nome}` : "Foto do animal",
     loading: "lazy",
   });

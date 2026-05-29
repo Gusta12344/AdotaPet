@@ -2,6 +2,7 @@ package com.adotapet.backend.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.adotapet.backend.dto.AdotanteRequest;
 import com.adotapet.backend.dto.AdotanteResponse;
@@ -12,9 +13,11 @@ import com.adotapet.backend.repository.AdotanteRepository;
 public class AdotanteService {
 
     private final AdotanteRepository adotanteRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public AdotanteService(AdotanteRepository adotanteRepository) {
+    public AdotanteService(AdotanteRepository adotanteRepository, PasswordEncoder passwordEncoder) {
         this.adotanteRepository = adotanteRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -29,6 +32,7 @@ public class AdotanteService {
         Adotante adotante = new Adotante();
         adotante.setNome(request.nome());
         adotante.setCpf(request.cpf());
+        adotante.setSenha(passwordEncoder.encode(request.senha()));
         adotante.setEmail(request.email());
         adotante.setTelefone(request.telefone());
         adotante.setEndereco(request.endereco());

@@ -65,6 +65,7 @@ export function buildAdotantePayload(data) {
   const payload = {
     nome: readValue(data, "nome"),
     cpf: readValue(data, "cpf"),
+    senha: readValue(data, "senha"),
     email: readValue(data, "email").toLowerCase(),
     telefone: readValue(data, "telefone"),
     endereco: readValue(data, "endereco"),
@@ -76,7 +77,7 @@ export function buildAdotantePayload(data) {
     preferenciaEspecie: requireEnum("preferenciaEspecie", readValue(data, "preferenciaEspecie"), ENUMS.especieComIndiferente),
   };
 
-  const missing = validateRequiredFields(payload, ["nome", "cpf", "email", "telefone", "endereco"]);
+  const missing = validateRequiredFields(payload, ["nome", "cpf", "senha", "email", "telefone", "endereco"]);
   if (missing.length > 0) {
     throw new Error(`Campos obrigatorios: ${missing.join(", ")}`);
   }

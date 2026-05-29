@@ -17,6 +17,9 @@ public class Adotante extends Pessoa {
     private String cpf;
 
     @Column(nullable = false, length = 255)
+    private String senha;
+
+    @Column(nullable = false, length = 255)
     private String endereco;
 
     @Enumerated(EnumType.STRING)
@@ -57,6 +60,14 @@ public class Adotante extends Pessoa {
 
     public void setCpf(String cpf) {
         this.cpf = cpf;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
     }
 
     public String getEndereco() {
