@@ -2,6 +2,7 @@ package com.adotapet.backend;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import com.adotapet.backend.model.Especie;
 import com.adotapet.backend.model.NivelEnergia;
 import com.adotapet.backend.model.Porte;
 import com.adotapet.backend.model.Protetor;
+import com.adotapet.backend.model.Sexo;
 import com.adotapet.backend.model.StatusAnimal;
 
 class AnimalImagemTest {
@@ -30,7 +32,13 @@ class AnimalImagemTest {
         animal.setRaca("SRD");
         animal.setIdadeMeses(24);
         animal.setPorte(Porte.grande);
+        animal.setSexo(Sexo.macho);
+        animal.setDataResgate(LocalDate.of(2024, 9, 12));
         animal.setNivelEnergia(NivelEnergia.alto);
+        animal.setMicrochip(true);
+        animal.setCastrado(true);
+        animal.setVermifugado(true);
+        animal.setVacinado(true);
         animal.setStatus(StatusAnimal.disponivel);
         animal.setProtetor(protetor);
         animal.adicionarImagem(new AnimalImagem("/uploads/animais/thor-1.jpg", 1));
@@ -41,5 +49,11 @@ class AnimalImagemTest {
         assertEquals(List.of(
                 "/uploads/animais/thor-1.jpg",
                 "/uploads/animais/thor-2.jpg"), response.imagemUrls());
+        assertEquals(Sexo.macho, response.sexo());
+        assertEquals(LocalDate.of(2024, 9, 12), response.dataResgate());
+        assertEquals(true, response.microchip());
+        assertEquals(true, response.castrado());
+        assertEquals(true, response.vermifugado());
+        assertEquals(true, response.vacinado());
     }
 }

@@ -42,10 +42,16 @@ CREATE TABLE IF NOT EXISTS animal (
     raca                VARCHAR(100)                              DEFAULT 'SRD',
     idade_meses         INT          NOT NULL                     CHECK (idade_meses >= 0),
     porte               ENUM('pequeno', 'medio', 'grande')        NOT NULL,
+    sexo                ENUM('macho', 'femea')                    NOT NULL,
+    data_resgate        DATE         NOT NULL,
     nivel_energia       ENUM('baixo', 'medio', 'alto')            NOT NULL,
     bom_com_criancas    TINYINT(1)   NOT NULL DEFAULT 0,
     bom_com_animais     TINYINT(1)   NOT NULL DEFAULT 0,
     precisa_espaco      TINYINT(1)   NOT NULL DEFAULT 0,          -- 1 = precisa de quintal
+    microchip           TINYINT(1)   NOT NULL DEFAULT 0,
+    castrado            TINYINT(1)   NOT NULL DEFAULT 0,
+    vermifugado         TINYINT(1)   NOT NULL DEFAULT 0,
+    vacinado            TINYINT(1)   NOT NULL DEFAULT 0,
     descricao           TEXT,
     status              ENUM('disponivel', 'em_analise', 'adotado') NOT NULL DEFAULT 'disponivel',
     data_cadastro       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -108,118 +114,11 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
 );
 
 -- ── Índices para performance ──────────────────────────────────
-SET @schema_atual = DATABASE();
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'CREATE INDEX idx_animal_status ON animal (status)',
-        'SELECT 1')
-    FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'animal' AND INDEX_NAME = 'idx_animal_status'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'CREATE INDEX idx_animal_especie ON animal (especie)',
-        'SELECT 1')
-    FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'animal' AND INDEX_NAME = 'idx_animal_especie'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem)',
-        'SELECT 1')
-    FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'animal_imagem' AND INDEX_NAME = 'idx_animal_imagem'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status)',
-        'SELECT 1')
-    FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'solicitacao_adocao' AND INDEX_NAME = 'idx_sol_animal_status'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao)',
-        'SELECT 1')
-    FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'solicitacao_adocao' AND INDEX_NAME = 'idx_sol_data'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
--- Migracao leve para bancos ja criados por versoes anteriores do script.
--- CREATE TABLE IF NOT EXISTS nao adiciona colunas novas em tabelas existentes.
-SET @hash_senha_padrao = '$2a$10$XP1tvcPQGda.a1VpAsYlGeN4oSwouCCevP8HRyaLNjK1ZcxnFUF4O';
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'ALTER TABLE admin ADD COLUMN cpf VARCHAR(14) NULL AFTER email',
-        'SELECT 1')
-    FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'admin' AND COLUMN_NAME = 'cpf'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-UPDATE admin
-SET cpf = '000.000.000-00'
-WHERE email = 'admin@adotapet.com' AND (cpf IS NULL OR cpf = '');
-
-UPDATE admin
-SET cpf = CONCAT('900.000.000-', LPAD(MOD(id, 100), 2, '0'))
-WHERE cpf IS NULL OR cpf = '';
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'ALTER TABLE admin ADD UNIQUE INDEX uk_admin_cpf (cpf)',
-        'SELECT 1')
-    FROM information_schema.STATISTICS
-    WHERE TABLE_SCHEMA = @schema_atual
-      AND TABLE_NAME = 'admin'
-      AND COLUMN_NAME = 'cpf'
-      AND NON_UNIQUE = 0
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-ALTER TABLE admin MODIFY cpf VARCHAR(14) NOT NULL;
-
-SET @sql = (
-    SELECT IF(COUNT(*) = 0,
-        'ALTER TABLE adotante ADD COLUMN senha VARCHAR(255) NULL AFTER cpf',
-        'SELECT 1')
-    FROM information_schema.COLUMNS
-    WHERE TABLE_SCHEMA = @schema_atual AND TABLE_NAME = 'adotante' AND COLUMN_NAME = 'senha'
-);
-PREPARE stmt FROM @sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-
-UPDATE adotante
-SET senha = @hash_senha_padrao
-WHERE senha IS NULL OR senha = '';
-
-ALTER TABLE adotante MODIFY senha VARCHAR(255) NOT NULL;
+CREATE INDEX idx_animal_status ON animal (status);
+CREATE INDEX idx_animal_especie ON animal (especie);
+CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem);
+CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status);
+CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao);
 
 -- ============================================================
 --  DML — Dados de Exemplo
@@ -243,87 +142,88 @@ INSERT INTO protetor (nome, email, telefone) VALUES
     ('Protetora Ana Lima',     'ana.lima@gmail.com', '(47) 99803-3333');
 
 -- ── animais ───────────────────────────────────────────────────
-INSERT INTO animal (nome, especie, raca, idade_meses, porte, nivel_energia,
+INSERT INTO animal (nome, especie, raca, idade_meses, porte, sexo, data_resgate, nivel_energia,
                     bom_com_criancas, bom_com_animais, precisa_espaco,
+                    microchip, castrado, vermifugado, vacinado,
                     descricao, status, protetor_id)
 VALUES
     -- cães
-    ('Bolinha', 'cao', 'SRD',             24,  'pequeno', 'alto',  1, 1, 0,
+    ('Bolinha', 'cao', 'SRD',             24,  'pequeno', 'macho', '2024-01-15', 'alto',  1, 1, 0, 0, 1, 1, 1,
      'Bolinha é um cão alegre e brincalhão. Adora crianças e se dá bem com outros cães.',
      'disponivel', 1),
 
-    ('Thor',    'cao', 'Labrador',        36,  'grande',  'alto',  1, 0, 1,
+    ('Thor',    'cao', 'Labrador',        36,  'grande',  'macho', '2023-11-08', 'alto',  1, 0, 1, 1, 1, 1, 1,
      'Thor é forte, leal e cheio de energia. Precisa de espaço para correr e brincar.',
      'disponivel', 1),
 
-    ('Mel',     'cao', 'Poodle',          60,  'pequeno', 'baixo', 1, 1, 0,
+    ('Mel',     'cao', 'Poodle',          60,  'pequeno', 'femea', '2022-05-20', 'baixo', 1, 1, 0, 1, 1, 1, 1,
      'Mel é tranquila, carinhosa e adora colo. Ideal para apartamento.',
      'disponivel', 2),
 
-    ('Rex',     'cao', 'Pastor Alemão',   18,  'grande',  'alto',  0, 0, 1,
+    ('Rex',     'cao', 'Pastor Alemão',   18,  'grande',  'macho', '2024-06-12', 'alto',  0, 0, 1, 0, 0, 1, 1,
      'Rex é inteligente mas ainda está em treinamento social. Sem crianças pequenas.',
      'disponivel', 2),
 
-    ('Pipoca',  'cao', 'Dachshund',       12,  'pequeno', 'medio', 1, 1, 0,
+    ('Pipoca',  'cao', 'Dachshund',       12,  'pequeno', 'femea', '2025-03-04', 'medio', 1, 1, 0, 0, 0, 1, 1,
      'Pipoca é curiosa e ativa, mas se adapta bem a espaços menores.',
      'disponivel', 3),
 
     -- gatos
-    ('Mimi',   'gato', 'Siamês',          48,  'pequeno', 'baixo', 1, 0, 0,
+    ('Mimi',   'gato', 'Siamês',          48,  'pequeno', 'femea', '2023-02-18', 'baixo', 1, 0, 0, 1, 1, 1, 1,
      'Mimi é independente e tranquila. Prefere ambientes calmos.',
      'disponivel', 1),
 
-    ('Pelé',   'gato', 'SRD',              8,  'pequeno', 'alto',  1, 1, 0,
+    ('Pelé',   'gato', 'SRD',              8,  'pequeno', 'macho', '2025-10-02', 'alto',  1, 1, 0, 0, 0, 1, 1,
      'Pelé é um gatinho filhote super curioso e brincalhão.',
      'disponivel', 2),
 
-    ('Sombra', 'gato', 'SRD',             36,  'pequeno', 'medio', 0, 1, 0,
+    ('Sombra', 'gato', 'SRD',             36,  'pequeno', 'macho', '2023-07-11', 'medio', 0, 1, 0, 0, 1, 1, 1,
      'Sombra é tímido com crianças mas convive bem com outros gatos.',
      'disponivel', 3),
 
     -- animal em análise (para testar fluxo)
-    ('Duque',  'cao', 'Bulldog Francês',  24,  'pequeno', 'baixo', 1, 1, 0,
+    ('Duque',  'cao', 'Bulldog Francês',  24,  'pequeno', 'macho', '2023-12-22', 'baixo', 1, 1, 0, 1, 1, 1, 1,
      'Duque é calmo, carinhoso e se adapta bem a apartamento.',
      'em_analise', 1),
 
     -- mais animais disponíveis para a página inicial
-    ('Luna',   'cao', 'Golden Retriever', 30,  'grande',  'alto',  1, 1, 1,
+    ('Luna',   'cao', 'Golden Retriever', 30,  'grande',  'femea', '2023-03-12', 'alto',  1, 1, 1, 1, 1, 1, 1,
      'Luna é dócil, brincalhona e ama passeios longos com a família.',
      'disponivel', 1),
 
-    ('Nina',   'gato', 'SRD',             14,  'pequeno', 'medio', 1, 1, 0,
+    ('Nina',   'gato', 'SRD',             14,  'pequeno', 'femea', '2025-06-19', 'medio', 1, 1, 0, 0, 0, 1, 1,
      'Nina é curiosa, sociável e gosta de observar tudo pela janela.',
      'disponivel', 2),
 
-    ('Tobias', 'cao', 'Beagle',           42,  'medio',   'alto',  1, 1, 0,
+    ('Tobias', 'cao', 'Beagle',           42,  'medio',   'macho', '2022-10-05', 'alto',  1, 1, 0, 1, 1, 1, 1,
      'Tobias é farejador, animado e combina com tutores ativos.',
      'disponivel', 3),
 
-    ('Amora',  'gato', 'Persa',           72,  'pequeno', 'baixo', 1, 0, 0,
+    ('Amora',  'gato', 'Persa',           72,  'pequeno', 'femea', '2021-09-17', 'baixo', 1, 0, 0, 1, 1, 1, 1,
      'Amora é tranquila, carinhosa e prefere uma rotina mais calma.',
      'disponivel', 1),
 
-    ('Bento',  'cao', 'SRD',               7,  'medio',   'medio', 1, 1, 0,
+    ('Bento',  'cao', 'SRD',               7,  'medio',   'macho', '2025-11-14', 'medio', 1, 1, 0, 0, 0, 1, 1,
      'Bento é filhote, aprende rápido e está pronto para crescer em família.',
      'disponivel', 2),
 
-    ('Frida',  'gato', 'Angorá',          28,  'pequeno', 'medio', 0, 1, 0,
+    ('Frida',  'gato', 'Angorá',          28,  'pequeno', 'femea', '2024-02-09', 'medio', 0, 1, 0, 1, 1, 1, 1,
      'Frida é elegante, independente e convive bem com outros gatos.',
      'disponivel', 3),
 
-    ('Apolo',  'cao', 'Border Collie',    20,  'medio',   'alto',  1, 1, 1,
+    ('Apolo',  'cao', 'Border Collie',    20,  'medio',   'macho', '2024-08-27', 'alto',  1, 1, 1, 1, 0, 1, 1,
      'Apolo é muito inteligente, precisa de estímulos e adora aprender comandos.',
      'disponivel', 1),
 
-    ('Cacau',  'cao', 'Shih-tzu',         54,  'pequeno', 'baixo', 1, 1, 0,
+    ('Cacau',  'cao', 'Shih-tzu',         54,  'pequeno', 'femea', '2022-12-01', 'baixo', 1, 1, 0, 1, 1, 1, 1,
      'Cacau é companheira, calma e se adapta muito bem a apartamento.',
      'disponivel', 2),
 
-    ('Jade',   'gato', 'SRD',             10,  'pequeno', 'alto',  1, 1, 0,
+    ('Jade',   'gato', 'SRD',             10,  'pequeno', 'femea', '2025-09-10', 'alto',  1, 1, 0, 0, 0, 1, 1,
      'Jade é filhote, brincalhona e gosta de interagir com pessoas.',
      'disponivel', 3),
 
-    ('Gaia',   'outro', 'Coelha',         16,  'pequeno', 'medio', 1, 0, 0,
+    ('Gaia',   'outro', 'Coelha',         16,  'pequeno', 'femea', '2024-05-23', 'medio', 1, 0, 0, 0, 1, 1, 1,
      'Gaia é uma coelha dócil, limpa e acostumada a ambientes internos.',
      'disponivel', 1);
 
@@ -385,7 +285,19 @@ FROM animal
 GROUP BY status;
 
 -- Animais disponíveis com nome do protetor
-SELECT a.id, a.nome, a.especie, a.porte, a.nivel_energia, p.nome AS protetor
+SELECT
+    a.id,
+    a.nome,
+    a.especie,
+    a.porte,
+    a.sexo,
+    a.data_resgate,
+    a.nivel_energia,
+    a.microchip,
+    a.castrado,
+    a.vermifugado,
+    a.vacinado,
+    p.nome AS protetor
 FROM animal a
 JOIN protetor p ON a.protetor_id = p.id
 WHERE a.status = 'disponivel'

@@ -47,6 +47,12 @@ class AuthServiceTest {
         adotante.setNome("Maria Oliveira");
         adotante.setCpf("111.111.111-11");
         adotante.setEmail("maria@email.com");
+        adotante.setTelefone("(47) 99901-0001");
+        adotante.setEndereco("Rua das Flores, 100");
+        adotante.setTipoMoradia(com.adotapet.backend.model.TipoMoradia.apartamento);
+        adotante.setNivelAtividade(com.adotapet.backend.model.NivelAtividade.moderado);
+        adotante.setPreferenciaPorte(com.adotapet.backend.model.Porte.pequeno);
+        adotante.setPreferenciaEspecie(com.adotapet.backend.model.Especie.gato);
         adotante.setSenha("$hash-adotante");
 
         when(adotanteRepository.findByCpf("111.111.111-11")).thenReturn(Optional.of(adotante));
@@ -68,6 +74,12 @@ class AuthServiceTest {
         adotante.setNome("Mariana Costa");
         adotante.setCpf("11111111111");
         adotante.setEmail("mariana@email.com");
+        adotante.setTelefone("(47) 99901-0001");
+        adotante.setEndereco("Rua das Flores, 100");
+        adotante.setTipoMoradia(com.adotapet.backend.model.TipoMoradia.apartamento);
+        adotante.setNivelAtividade(com.adotapet.backend.model.NivelAtividade.moderado);
+        adotante.setPreferenciaPorte(com.adotapet.backend.model.Porte.pequeno);
+        adotante.setPreferenciaEspecie(com.adotapet.backend.model.Especie.gato);
         adotante.setSenha("$hash-adotante");
 
         when(adotanteRepository.findByCpf("111.111.111-11")).thenReturn(Optional.empty());

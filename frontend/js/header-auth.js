@@ -45,6 +45,7 @@ export function formatCpfForLogin(value) {
 export function createHeaderAuthController({
   root = document,
   storage = globalThis.sessionStorage || createMemoryStorage(),
+  onLogin = null,
 } = {}) {
   const loginButton = query(root, "[data-login-open]");
   const privateActions = queryAll(root, "[data-auth-private]");
@@ -141,13 +142,23 @@ export function createHeaderAuthController({
         throw new Error(response.mensagem || "CPF ou senha invalidos");
       }
 
-      saveCurrentUser(storage, {
+      const nextUser = {
         id: response.id,
         nome: response.nome,
         cpf: response.cpf,
         email: response.email,
         tipo: response.tipo,
-      });
+        telefone: response.telefone,
+        endereco: response.endereco,
+        tipoMoradia: response.tipoMoradia,
+        temCriancas: response.temCriancas,
+        temOutrosAnimais: response.temOutrosAnimais,
+        nivelAtividade: response.nivelAtividade,
+        preferenciaPorte: response.preferenciaPorte,
+        preferenciaEspecie: response.preferenciaEspecie,
+      };
+
+      saveCurrentUser(storage, nextUser);
 
       if (response.tipo === "admin") {
         saveAdminCredentials(storage, response.email, senha);
@@ -159,6 +170,7 @@ export function createHeaderAuthController({
 
       render();
       closeLoginModal();
+      onLogin?.(readCurrentUser(storage));
     } catch (error) {
       setText(loginFeedback, error.message);
     }
@@ -204,7 +216,7 @@ export function createHeaderAuthController({
   editProfileButton?.addEventListener("click", () => {
     closeAccountMenu();
     const currentUser = readCurrentUser(storage);
-    window.location.href = currentUser?.tipo === "admin" ? "admin-painel.html" : "cadastro.html";
+    window.location.href = currentUser?.tipo === "admin" ? "admin-painel.html" : "editar-dados.html";
   });
   logoutButton?.addEventListener("click", logout);
   root.addEventListener?.("click", closeAccountMenu);

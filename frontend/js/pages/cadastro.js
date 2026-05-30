@@ -17,9 +17,17 @@ form?.addEventListener("submit", async (event) => {
     saveCurrentUser(sessionStorage, {
       id: adotante.id,
       nome: adotante.nome,
-      cpf: payload.cpf,
+      cpf: adotante.cpf || payload.cpf,
       email: adotante.email,
       tipo: "adotante",
+      telefone: adotante.telefone,
+      endereco: adotante.endereco,
+      tipoMoradia: adotante.tipoMoradia,
+      temCriancas: adotante.temCriancas,
+      temOutrosAnimais: adotante.temOutrosAnimais,
+      nivelAtividade: adotante.nivelAtividade,
+      preferenciaPorte: adotante.preferenciaPorte,
+      preferenciaEspecie: adotante.preferenciaEspecie,
     });
     window.location.href = "recomendados.html";
   } catch (error) {

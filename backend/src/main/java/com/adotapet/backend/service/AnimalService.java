@@ -82,10 +82,16 @@ public class AnimalService {
         animal.setRaca(request.raca());
         animal.setIdadeMeses(request.idadeMeses());
         animal.setPorte(request.porte());
+        animal.setSexo(request.sexo());
+        animal.setDataResgate(request.dataResgate());
         animal.setNivelEnergia(request.nivelEnergia());
         animal.setBomComCriancas(request.bomComCriancas());
         animal.setBomComAnimais(request.bomComAnimais());
         animal.setPrecisaEspaco(request.precisaEspaco());
+        animal.setMicrochip(request.microchip());
+        animal.setCastrado(request.castrado());
+        animal.setVermifugado(request.vermifugado());
+        animal.setVacinado(request.vacinado());
         animal.setDescricao(request.descricao());
         animal.setStatus(StatusAnimal.disponivel);
         animal.setProtetor(protetor);

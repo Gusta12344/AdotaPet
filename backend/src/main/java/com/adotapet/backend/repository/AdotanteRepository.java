@@ -12,4 +12,6 @@ public interface AdotanteRepository extends JpaRepository<Adotante, Integer> {
     boolean existsByCpf(String cpf);
 
     Optional<Adotante> findByCpf(String cpf);
+
+    Optional<Adotante> findByEmail(String email);
 }

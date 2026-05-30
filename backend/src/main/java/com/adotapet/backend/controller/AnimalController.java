@@ -1,7 +1,9 @@
 package com.adotapet.backend.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import com.adotapet.backend.dto.RecomendacaoAnimalResponse;
 import com.adotapet.backend.model.Especie;
 import com.adotapet.backend.model.NivelEnergia;
 import com.adotapet.backend.model.Porte;
+import com.adotapet.backend.model.Sexo;
 import com.adotapet.backend.service.AnimalService;
 
 import jakarta.validation.Valid;
@@ -65,15 +68,22 @@ public class AnimalController {
             @RequestParam(required = false) String raca,
             @RequestParam Integer idadeMeses,
             @RequestParam Porte porte,
+            @RequestParam Sexo sexo,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataResgate,
             @RequestParam NivelEnergia nivelEnergia,
             @RequestParam(defaultValue = "false") boolean bomComCriancas,
             @RequestParam(defaultValue = "false") boolean bomComAnimais,
             @RequestParam(defaultValue = "false") boolean precisaEspaco,
+            @RequestParam(defaultValue = "false") boolean microchip,
+            @RequestParam(defaultValue = "false") boolean castrado,
+            @RequestParam(defaultValue = "false") boolean vermifugado,
+            @RequestParam(defaultValue = "false") boolean vacinado,
             @RequestParam(required = false) String descricao,
             @RequestParam Integer protetorId,
             @RequestParam(value = "imagens", required = false) List<MultipartFile> imagens) {
-        AnimalRequest request = new AnimalRequest(nome, especie, raca, idadeMeses, porte, nivelEnergia,
-                bomComCriancas, bomComAnimais, precisaEspaco, descricao, protetorId);
+        AnimalRequest request = new AnimalRequest(nome, especie, raca, idadeMeses, porte, sexo, dataResgate,
+                nivelEnergia, bomComCriancas, bomComAnimais, precisaEspaco, microchip, castrado, vermifugado,
+                vacinado, descricao, protetorId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(animalService.cadastrarComArquivos(request, imagens));
     }

@@ -1,6 +1,12 @@
 const ADOTANTE_ID_KEY = "adotapet.adotanteId";
 const LAST_SOLICITACAO_KEY = "adotapet.lastSolicitacao";
 const CURRENT_USER_KEY = "adotapet.currentUser";
+const PROFILE_ENUMS = {
+  tipoMoradia: ["apartamento", "casa_sem_quintal", "casa_com_quintal"],
+  nivelAtividade: ["sedentario", "moderado", "ativo"],
+  preferenciaPorte: ["pequeno", "medio", "grande", "indiferente"],
+  preferenciaEspecie: ["cao", "gato", "outro", "indiferente"],
+};
 
 export function saveAdotanteId(storage, id) {
   const number = Number.parseInt(id, 10);
@@ -48,6 +54,7 @@ export function saveCurrentUser(storage, user) {
   const cpf = String(user?.cpf || "").trim();
   const email = String(user?.email || "").trim().toLowerCase();
   const tipo = String(user?.tipo || "adotante").trim().toLowerCase();
+  const profile = normalizeProfileFields(user);
 
   if (!Number.isInteger(id) || id <= 0) {
     throw new Error("ID do usuario invalido");
@@ -67,7 +74,7 @@ export function saveCurrentUser(storage, user) {
     throw new Error("Tipo do usuario invalido");
   }
 
-  storage.setItem(CURRENT_USER_KEY, JSON.stringify({ id, nome, cpf, email, tipo }));
+  storage.setItem(CURRENT_USER_KEY, JSON.stringify({ id, nome, cpf, email, tipo, ...profile }));
 }
 
 export function readCurrentUser(storage) {
@@ -83,8 +90,9 @@ export function readCurrentUser(storage) {
     const cpf = String(user?.cpf || "").trim();
     const email = String(user?.email || "").trim().toLowerCase();
     const tipo = String(user?.tipo || "adotante").trim().toLowerCase();
+    const profile = normalizeProfileFields(user);
     return Number.isInteger(id) && id > 0 && nome && cpf && email && ["adotante", "admin"].includes(tipo)
-      ? { id, nome, cpf, email, tipo }
+      ? { id, nome, cpf, email, tipo, ...profile }
       : null;
   } catch {
     return null;
@@ -93,4 +101,51 @@ export function readCurrentUser(storage) {
 
 export function clearCurrentUser(storage) {
   storage.removeItem(CURRENT_USER_KEY);
+}
+
+function normalizeProfileFields(user) {
+  const telefone = cleanOptionalText(user?.telefone);
+  const endereco = cleanOptionalText(user?.endereco);
+  const tipoMoradia = cleanOptionalEnum(user?.tipoMoradia, PROFILE_ENUMS.tipoMoradia);
+  const nivelAtividade = cleanOptionalEnum(user?.nivelAtividade, PROFILE_ENUMS.nivelAtividade);
+  const preferenciaPorte = cleanOptionalEnum(user?.preferenciaPorte, PROFILE_ENUMS.preferenciaPorte);
+  const preferenciaEspecie = cleanOptionalEnum(user?.preferenciaEspecie, PROFILE_ENUMS.preferenciaEspecie);
+  const profile = {};
+
+  if (telefone) {
+    profile.telefone = telefone;
+  }
+  if (endereco) {
+    profile.endereco = endereco;
+  }
+  if (tipoMoradia) {
+    profile.tipoMoradia = tipoMoradia;
+  }
+  if (nivelAtividade) {
+    profile.nivelAtividade = nivelAtividade;
+  }
+  if (preferenciaPorte) {
+    profile.preferenciaPorte = preferenciaPorte;
+  }
+  if (preferenciaEspecie) {
+    profile.preferenciaEspecie = preferenciaEspecie;
+  }
+
+  if (typeof user?.temCriancas === "boolean") {
+    profile.temCriancas = user.temCriancas;
+  }
+  if (typeof user?.temOutrosAnimais === "boolean") {
+    profile.temOutrosAnimais = user.temOutrosAnimais;
+  }
+
+  return profile;
+}
+
+function cleanOptionalText(value) {
+  return String(value || "").trim();
+}
+
+function cleanOptionalEnum(value, allowed) {
+  const clean = String(value || "").trim().toLowerCase();
+  return allowed.includes(clean) ? clean : "";
 }

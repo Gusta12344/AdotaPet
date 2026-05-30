@@ -7,6 +7,14 @@ public record LoginResponse(
         String nome,
         String cpf,
         String email,
+        String telefone,
+        String endereco,
+        String tipoMoradia,
+        boolean temCriancas,
+        boolean temOutrosAnimais,
+        String nivelAtividade,
+        String preferenciaPorte,
+        String preferenciaEspecie,
         String mensagem
 ) {
 }

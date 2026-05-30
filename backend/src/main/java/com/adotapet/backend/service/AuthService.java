@@ -50,6 +50,14 @@ public class AuthService {
                 adotante.getNome(),
                 adotante.getCpf(),
                 adotante.getEmail(),
+                adotante.getTelefone(),
+                adotante.getEndereco(),
+                adotante.getTipoMoradia().name(),
+                adotante.isTemCriancas(),
+                adotante.isTemOutrosAnimais(),
+                adotante.getNivelAtividade().name(),
+                adotante.getPreferenciaPorte().name(),
+                adotante.getPreferenciaEspecie().name(),
                 "Login realizado com sucesso"
         );
     }
@@ -69,6 +77,14 @@ public class AuthService {
                 admin.getNome(),
                 admin.getCpf(),
                 admin.getEmail(),
+                null,
+                null,
+                null,
+                false,
+                false,
+                null,
+                null,
+                null,
                 "Login realizado com sucesso"
         );
     }

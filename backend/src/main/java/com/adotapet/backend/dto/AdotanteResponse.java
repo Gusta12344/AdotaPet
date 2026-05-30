@@ -11,6 +11,7 @@ import com.adotapet.backend.model.TipoMoradia;
 public record AdotanteResponse(
         Integer id,
         String nome,
+        String cpf,
         String email,
         String telefone,
         String endereco,
@@ -26,6 +27,7 @@ public record AdotanteResponse(
         return new AdotanteResponse(
                 adotante.getId(),
                 adotante.getNome(),
+                adotante.getCpf(),
                 adotante.getEmail(),
                 adotante.getTelefone(),
                 adotante.getEndereco(),

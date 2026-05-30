@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   buildAdotantePayload,
+  buildAdotanteUpdatePayload,
   buildAnimalFormData,
   buildAnimalPayload,
   validateRequiredFields,
@@ -172,6 +173,38 @@ test("buildAdotantePayload rejects enum values outside the backend contract", ()
   );
 });
 
+test("buildAdotanteUpdatePayload keeps profile edits within the API contract", () => {
+  const payload = buildAdotanteUpdatePayload(formData([
+    ["nome", "  Maria Souza  "],
+    ["email", " MARIA.SOUZA@EMAIL.COM "],
+    ["telefone", " (47) 98888-0000 "],
+    ["endereco", " Rua Nova, 22 "],
+    ["tipoMoradia", "casa_com_quintal"],
+    ["temCriancas", "on"],
+    ["temOutrosAnimais", "on"],
+    ["nivelAtividade", "ativo"],
+    ["preferenciaPorte", "grande"],
+    ["preferenciaEspecie", "cao"],
+    ["senhaAtual", " maria123 "],
+    ["novaSenha", " nova123 "],
+  ]));
+
+  assert.deepEqual(payload, {
+    nome: "Maria Souza",
+    email: "maria.souza@email.com",
+    telefone: "(47) 98888-0000",
+    endereco: "Rua Nova, 22",
+    tipoMoradia: "casa_com_quintal",
+    temCriancas: true,
+    temOutrosAnimais: true,
+    nivelAtividade: "ativo",
+    preferenciaPorte: "grande",
+    preferenciaEspecie: "cao",
+    senhaAtual: "maria123",
+    novaSenha: "nova123",
+  });
+});
+
 test("buildAnimalPayload keeps admin-created animals within the API enum contract", () => {
   const payload = buildAnimalPayload(formData([
     ["nome", "Thor"],
@@ -179,9 +212,15 @@ test("buildAnimalPayload keeps admin-created animals within the API enum contrac
     ["raca", ""],
     ["idadeMeses", "36"],
     ["porte", "grande"],
+    ["sexo", "macho"],
+    ["dataResgate", "2025-08-14"],
     ["nivelEnergia", "alto"],
     ["bomComCriancas", "on"],
     ["precisaEspaco", "on"],
+    ["microchip", "on"],
+    ["castrado", "on"],
+    ["vermifugado", "on"],
+    ["vacinado", "on"],
     ["descricao", " Precisa de quintal. "],
     ["protetorId", "2"],
   ]));
@@ -192,10 +231,16 @@ test("buildAnimalPayload keeps admin-created animals within the API enum contrac
     raca: "SRD",
     idadeMeses: 36,
     porte: "grande",
+    sexo: "macho",
+    dataResgate: "2025-08-14",
     nivelEnergia: "alto",
     bomComCriancas: true,
     bomComAnimais: false,
     precisaEspaco: true,
+    microchip: true,
+    castrado: true,
+    vermifugado: true,
+    vacinado: true,
     descricao: "Precisa de quintal.",
     protetorId: 2,
   });
@@ -210,6 +255,8 @@ test("buildAnimalFormData appends normalized animal fields and uploaded image fi
     ["raca", "SRD"],
     ["idadeMeses", "12"],
     ["porte", "pequeno"],
+    ["sexo", "femea"],
+    ["dataResgate", "2026-01-20"],
     ["nivelEnergia", "baixo"],
     ["descricao", ""],
     ["protetorId", "1"],
@@ -218,7 +265,13 @@ test("buildAnimalFormData appends normalized animal fields and uploaded image fi
   assert.equal(payload.get("nome"), "Mimi");
   assert.equal(payload.get("raca"), "SRD");
   assert.equal(payload.get("idadeMeses"), "12");
+  assert.equal(payload.get("sexo"), "femea");
+  assert.equal(payload.get("dataResgate"), "2026-01-20");
   assert.equal(payload.get("bomComCriancas"), "false");
+  assert.equal(payload.get("microchip"), "false");
+  assert.equal(payload.get("castrado"), "false");
+  assert.equal(payload.get("vermifugado"), "false");
+  assert.equal(payload.get("vacinado"), "false");
   assert.equal(payload.getAll("imagens").length, 2);
   assert.equal(payload.getAll("imagens")[0].name, "mimi.png");
   assert.equal(payload.getAll("imagens")[1].name, "mimi.jpg");

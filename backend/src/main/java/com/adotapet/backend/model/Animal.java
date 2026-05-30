@@ -1,5 +1,6 @@
 package com.adotapet.backend.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,13 @@ public class Animal {
     private Porte porte;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Sexo sexo;
+
+    @Column(name = "data_resgate", nullable = false)
+    private LocalDate dataResgate;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "nivel_energia", nullable = false)
     private NivelEnergia nivelEnergia;
 
@@ -57,6 +65,18 @@ public class Animal {
 
     @Column(name = "precisa_espaco", nullable = false)
     private boolean precisaEspaco;
+
+    @Column(nullable = false)
+    private boolean microchip;
+
+    @Column(nullable = false)
+    private boolean castrado;
+
+    @Column(nullable = false)
+    private boolean vermifugado;
+
+    @Column(nullable = false)
+    private boolean vacinado;
 
     @Column(columnDefinition = "TEXT")
     private String descricao;
@@ -83,6 +103,9 @@ public class Animal {
         }
         if (status == null) {
             status = StatusAnimal.disponivel;
+        }
+        if (dataResgate == null) {
+            dataResgate = LocalDate.now();
         }
         if (raca == null || raca.isBlank()) {
             raca = "SRD";
@@ -137,6 +160,22 @@ public class Animal {
         this.porte = porte;
     }
 
+    public Sexo getSexo() {
+        return sexo;
+    }
+
+    public void setSexo(Sexo sexo) {
+        this.sexo = sexo;
+    }
+
+    public LocalDate getDataResgate() {
+        return dataResgate;
+    }
+
+    public void setDataResgate(LocalDate dataResgate) {
+        this.dataResgate = dataResgate;
+    }
+
     public NivelEnergia getNivelEnergia() {
         return nivelEnergia;
     }
@@ -167,6 +206,38 @@ public class Animal {
 
     public void setPrecisaEspaco(boolean precisaEspaco) {
         this.precisaEspaco = precisaEspaco;
+    }
+
+    public boolean isMicrochip() {
+        return microchip;
+    }
+
+    public void setMicrochip(boolean microchip) {
+        this.microchip = microchip;
+    }
+
+    public boolean isCastrado() {
+        return castrado;
+    }
+
+    public void setCastrado(boolean castrado) {
+        this.castrado = castrado;
+    }
+
+    public boolean isVermifugado() {
+        return vermifugado;
+    }
+
+    public void setVermifugado(boolean vermifugado) {
+        this.vermifugado = vermifugado;
+    }
+
+    public boolean isVacinado() {
+        return vacinado;
+    }
+
+    public void setVacinado(boolean vacinado) {
+        this.vacinado = vacinado;
     }
 
     public String getDescricao() {

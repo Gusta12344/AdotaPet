@@ -3,6 +3,7 @@ const ENUMS = {
   nivelAtividade: ["sedentario", "moderado", "ativo"],
   porte: ["pequeno", "medio", "grande"],
   porteComIndiferente: ["pequeno", "medio", "grande", "indiferente"],
+  sexo: ["macho", "femea"],
   especie: ["cao", "gato", "outro"],
   especieComIndiferente: ["cao", "gato", "outro", "indiferente"],
   nivelEnergia: ["baixo", "medio", "alto"],
@@ -49,6 +50,28 @@ function requireInteger(field, value, { min = Number.MIN_SAFE_INTEGER } = {}) {
   return number;
 }
 
+function requireDate(field, value) {
+  const clean = String(value || "").trim();
+  const parts = /^(\d{4})-(\d{2})-(\d{2})$/.exec(clean);
+  if (!parts) {
+    throw new Error(`Valor invalido para ${field}`);
+  }
+
+  const year = Number(parts[1]);
+  const month = Number(parts[2]);
+  const day = Number(parts[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error(`Valor invalido para ${field}`);
+  }
+
+  return clean;
+}
+
 function optionalText(value, fallback = "") {
   const clean = String(value || "").trim();
   return clean || fallback;
@@ -85,6 +108,34 @@ export function buildAdotantePayload(data) {
   return payload;
 }
 
+export function buildAdotanteUpdatePayload(data) {
+  const payload = {
+    nome: readValue(data, "nome"),
+    email: readValue(data, "email").toLowerCase(),
+    telefone: readValue(data, "telefone"),
+    endereco: readValue(data, "endereco"),
+    tipoMoradia: requireEnum("tipoMoradia", readValue(data, "tipoMoradia"), ENUMS.tipoMoradia),
+    temCriancas: readBoolean(data, "temCriancas"),
+    temOutrosAnimais: readBoolean(data, "temOutrosAnimais"),
+    nivelAtividade: requireEnum("nivelAtividade", readValue(data, "nivelAtividade"), ENUMS.nivelAtividade),
+    preferenciaPorte: requireEnum("preferenciaPorte", readValue(data, "preferenciaPorte"), ENUMS.porteComIndiferente),
+    preferenciaEspecie: requireEnum("preferenciaEspecie", readValue(data, "preferenciaEspecie"), ENUMS.especieComIndiferente),
+    senhaAtual: readValue(data, "senhaAtual"),
+    novaSenha: readValue(data, "novaSenha"),
+  };
+
+  const missing = validateRequiredFields(payload, ["nome", "email", "telefone", "endereco", "senhaAtual"]);
+  if (missing.length > 0) {
+    throw new Error(`Campos obrigatorios: ${missing.join(", ")}`);
+  }
+
+  if (payload.novaSenha && payload.novaSenha.length < 6) {
+    throw new Error("A nova senha deve ter pelo menos 6 caracteres");
+  }
+
+  return payload;
+}
+
 export function buildAnimalPayload(data) {
   const payload = {
     nome: readValue(data, "nome"),
@@ -92,15 +143,30 @@ export function buildAnimalPayload(data) {
     raca: optionalText(readValue(data, "raca"), "SRD"),
     idadeMeses: requireInteger("idadeMeses", readValue(data, "idadeMeses"), { min: 0 }),
     porte: requireEnum("porte", readValue(data, "porte"), ENUMS.porte),
+    sexo: requireEnum("sexo", readValue(data, "sexo"), ENUMS.sexo),
+    dataResgate: requireDate("dataResgate", readValue(data, "dataResgate")),
     nivelEnergia: requireEnum("nivelEnergia", readValue(data, "nivelEnergia"), ENUMS.nivelEnergia),
     bomComCriancas: readBoolean(data, "bomComCriancas"),
     bomComAnimais: readBoolean(data, "bomComAnimais"),
     precisaEspaco: readBoolean(data, "precisaEspaco"),
+    microchip: readBoolean(data, "microchip"),
+    castrado: readBoolean(data, "castrado"),
+    vermifugado: readBoolean(data, "vermifugado"),
+    vacinado: readBoolean(data, "vacinado"),
     descricao: optionalText(readValue(data, "descricao")),
     protetorId: requireInteger("protetorId", readValue(data, "protetorId"), { min: 1 }),
   };
 
-  const missing = validateRequiredFields(payload, ["nome", "especie", "idadeMeses", "porte", "nivelEnergia", "protetorId"]);
+  const missing = validateRequiredFields(payload, [
+    "nome",
+    "especie",
+    "idadeMeses",
+    "porte",
+    "sexo",
+    "dataResgate",
+    "nivelEnergia",
+    "protetorId",
+  ]);
   if (missing.length > 0) {
     throw new Error(`Campos obrigatorios: ${missing.join(", ")}`);
   }

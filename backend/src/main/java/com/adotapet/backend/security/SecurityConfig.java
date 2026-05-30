@@ -25,6 +25,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/animais/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/adotantes").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/adotantes/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/adocoes").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
