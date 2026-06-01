@@ -1,4 +1,5 @@
 import { chooseAnimalImageUrl, fallbackAnimalImageUrl, getCachedAnimalImageUrl } from "./images.js";
+import { applyFavoriteButtonState } from "./favorites.js";
 
 export function $(selector, root = document) {
   return root.querySelector(selector);
@@ -105,66 +106,124 @@ export function getScoreLabel(score) {
   return "Compatibilidade baixa";
 }
 
-export function renderAnimalCard({ animal, score = null, compact = false }) {
-  const card = element("article", { className: compact ? "animal-card animal-card-compact" : "animal-card" });
+export function renderAnimalCard({ animal, score = null, compact = false, isFavorite = false, onFavoriteToggle = null }) {
+  const hasExplicitScore = score !== null && score !== undefined;
   const displayScore = score ?? getAnimalDisplayScore(animal);
+  const convivencia = normalizeAnimalConvivencia(animal);
+  const card = element("article", {
+    className: [
+      "animal-card",
+      hasExplicitScore ? "animal-card-match" : "animal-card-premium",
+      compact ? "animal-card-compact" : "",
+    ].filter(Boolean).join(" "),
+  });
   const media = element("div", { className: "animal-card-media" }, [
     renderAnimalImage(animal, { className: "animal-card-image" }),
+    element("span", { className: "animal-card-image-shade", "aria-hidden": "true" }),
   ]);
 
-  media.append(element("div", { className: "score" }, [
-    element("span", { text: "Compatibilidade" }),
-    element("strong", { text: `${displayScore}%` }),
-  ]));
+  if (!hasExplicitScore) {
+    media.append(element("div", { className: "score" }, [
+      element("span", { text: "Compatibilidade" }),
+      element("strong", { text: `${displayScore}%` }),
+    ]));
+  }
 
-  media.append(element("button", {
+  let saveButton = null;
+  const saveButtonClassName = (favorite) => [
+    "button",
+    "button-save",
+    hasExplicitScore ? "button-save-icon-only" : "",
+    favorite ? "button-save-active" : "",
+  ].filter(Boolean).join(" ");
+  const syncSaveButton = (favorite) => {
+    if (!saveButton) {
+      return;
+    }
+    saveButton.className = saveButtonClassName(favorite);
+    const label = saveButton.querySelector?.("[data-save-label]");
+    if (label) {
+      label.textContent = favorite ? "Salvo" : "Salvar";
+    }
+    saveButton.setAttribute("aria-pressed", favorite ? "true" : "false");
+    saveButton.setAttribute("aria-label", favorite ? `Remover ${animal.nome} dos favoritos` : `Salvar ${animal.nome} nos favoritos`);
+    saveButton.setAttribute("title", favorite ? "Remover dos favoritos" : "Salvar nos favoritos");
+  };
+  const requestFavoriteToggle = (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    const result = onFavoriteToggle?.({ animal, button: favoriteButton });
+    Promise.resolve(result).then((nextFavorite) => {
+      if (typeof nextFavorite === "boolean") {
+        syncSaveButton(nextFavorite);
+      }
+    });
+  };
+  const favoriteButton = element("button", {
     className: "favorite-toggle",
     type: "button",
-    "aria-label": `Salvar ${animal.nome}`,
-  }));
+    dataset: { animalId: animal.id },
+  });
+  applyFavoriteButtonState(favoriteButton, animal, isFavorite);
+  favoriteButton.addEventListener("click", requestFavoriteToggle);
+  media.append(favoriteButton);
 
-  if (animal.status) {
+  if (animal.status && !hasExplicitScore) {
     media.append(element("span", { className: "status-tag", text: formatEnum(animal.status) }));
   }
 
   card.append(media);
 
-  const header = element("div", { className: "animal-card-header" }, [
-    element("div", {}, [
-      element("h3", { text: animal.nome }),
-      element("p", { className: "muted", text: `${formatEnum(animal.especie)} - ${formatEnum(animal.porte)} - ${formatAge(animal.idadeMeses)}` }),
-    ]),
-    element("div", { className: "animal-tags" }, [
-      element("span", { text: formatEnum(animal.porte) }),
-      element("span", { text: formatAge(animal.idadeMeses) }),
-    ]),
-  ]);
+  const header = hasExplicitScore
+    ? element("div", { className: "animal-card-header animal-card-match-header" }, [
+      element("div", {}, [
+        element("h3", { text: animal.nome }),
+        element("p", { className: "muted", text: `${formatSpecies(animal.especie)} \u2022 ${formatAge(animal.idadeMeses)}` }),
+      ]),
+      element("span", { className: "animal-card-energy-badge", text: formatEnergy(animal.nivelEnergia) }),
+    ])
+    : element("div", { className: "animal-card-header" }, [
+      element("div", {}, [
+        element("h3", { text: animal.nome }),
+        element("p", { className: "muted", text: `${formatEnum(animal.especie)} - ${formatEnum(animal.porte)} - ${formatAge(animal.idadeMeses)}` }),
+      ]),
+    ]);
 
   const body = element("div", { className: "animal-card-body" }, [
+    hasExplicitScore ? matchPanel(displayScore) : null,
     header,
+    hasExplicitScore ? null : animalChips(animal),
   ]);
 
   if (animal.descricao && !compact) {
     body.append(element("p", { className: "animal-description", text: animal.descricao }));
   }
 
-  body.append(element("dl", { className: "animal-facts" }, [
-    fact("Castracao", animal.castrado === false ? "Nao" : "Sim"),
-    fact("Vacinado", animal.vacinado === false ? "Nao" : "Sim"),
-    fact("Vermifugado", animal.vermifugado === false ? "Nao" : "Sim"),
-    fact("Energia", formatEnum(animal.nivelEnergia)),
-    fact("Sociavel", animal.bomComAnimais ? "Muito" : "Moderado"),
-    fact("Ambiente ideal", animal.precisaEspaco ? "Casa com quintal" : "Apartamento"),
-  ]));
+  if (hasExplicitScore) {
+    body.append(matchReasonsPanel(animal, convivencia));
+    body.append(matchChips(animal));
+  } else {
+    body.append(carePillGrid(animal, convivencia, { compact }));
+  }
+
+  saveButton = element("button", {
+    className: saveButtonClassName(isFavorite),
+    type: "button",
+    "aria-pressed": isFavorite ? "true" : "false",
+    "aria-label": isFavorite ? `Remover ${animal.nome} dos favoritos` : `Salvar ${animal.nome} nos favoritos`,
+    title: isFavorite ? "Remover dos favoritos" : "Salvar nos favoritos",
+  }, hasExplicitScore ? [
+    element("span", { className: "button-save-icon", "aria-hidden": "true" }),
+  ] : [
+    element("span", { className: "button-save-icon", "aria-hidden": "true" }),
+    element("span", { text: isFavorite ? "Salvo" : "Salvar", dataset: { saveLabel: true } }),
+  ]);
+  saveButton.addEventListener("click", requestFavoriteToggle);
 
   const actions = element("div", { className: "card-actions" }, [
     element("a", { className: "button button-card", href: `animal.html?id=${animal.id}`, text: "Ver detalhes" }),
-    element("button", { className: "button button-save", type: "button", text: "Salvar" }),
+    saveButton,
   ]);
-
-  if (score !== null && score !== undefined) {
-    actions.prepend(element("span", { className: "score-label", text: getScoreLabel(score) }));
-  }
 
   body.append(actions);
   card.append(body);
@@ -195,6 +254,173 @@ function fact(label, value) {
     element("dt", { text: label }),
     element("dd", { text: value }),
   ]);
+}
+
+function animalChips(animal) {
+  return element("div", { className: "animal-card-chips" }, [
+    chip(formatEnum(animal.especie), "species"),
+    chip(formatEnum(animal.porte), "size"),
+    chip(formatAge(animal.idadeMeses), "age"),
+  ]);
+}
+
+function matchChips(animal) {
+  return element("div", { className: "animal-card-chips animal-card-match-chips" }, [
+    chip(formatEnergy(animal.nivelEnergia), "energy"),
+    chip(formatAge(animal.idadeMeses), "age"),
+    chip(formatSpecies(animal.especie), "species"),
+  ]);
+}
+
+function chip(text, variant = "") {
+  return element("span", { className: variant ? `animal-chip animal-chip-${variant}` : "animal-chip", text });
+}
+
+function matchPanel(score) {
+  const safeScore = Math.max(0, Math.min(Number(score) || 0, 100));
+  return element("section", { className: "match-panel match-score-panel", "aria-label": "Compatibilidade" }, [
+    element("div", { className: "match-panel-header" }, [
+      element("span", { text: getScoreLabel(safeScore) }),
+      element("strong", { text: `${safeScore}%` }),
+    ]),
+    element("div", { className: "match-meter", "aria-hidden": "true" }, [
+      element("span", { className: "match-meter-fill", style: `width: ${safeScore}%` }),
+    ]),
+  ]);
+}
+
+function matchReasonsPanel(animal, convivencia) {
+  return element("section", { className: "match-reasons-panel", "aria-label": "Por que combina" }, [
+    element("h4", { text: "Por que combina com voc\u00ea" }),
+    element("ul", { className: "match-reasons" }, matchReasons(animal, convivencia).map((reason) => (
+      element("li", {}, [
+        element("span", { className: "match-reason-icon", "aria-hidden": "true" }, [
+          icon(reason.icon),
+        ]),
+        element("span", { className: "match-reason-text", text: reason.text }),
+      ])
+    ))),
+  ]);
+}
+
+function matchReasons(animal, convivencia) {
+  const coexistence = convivencia.caes
+    ? "Convive bem com outros c\u00e3es"
+    : convivencia.gatos
+      ? "Convive bem com gatos"
+      : "Perfil tranquilo para convivencia individual";
+
+  return [
+    {
+      icon: "home",
+      text: animal.precisaEspaco ? "Combina com casa com quintal" : "Mora em apartamento",
+    },
+    {
+      icon: "energy",
+      text: "N\u00edvel de energia compat\u00edvel",
+    },
+    {
+      icon: "paw",
+      text: coexistence,
+    },
+  ];
+}
+
+function icon(name) {
+  const svg = svgElement("svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("focusable", "false");
+
+  const paths = {
+    home: [
+      "M4 21V9l8-5 8 5v12",
+      "M9 21v-7h6v7",
+      "M8 11h.01",
+      "M16 11h.01",
+    ],
+    energy: [
+      "M13 2 4 14h7l-1 8 10-13h-7l1-7Z",
+    ],
+    paw: [
+      "M8.5 10.5a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6Z",
+      "M15.5 10.5a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6Z",
+      "M6.8 15.1a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z",
+      "M17.2 15.1a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z",
+      "M8.6 18.2c.8-2 6-2 6.8 0 .5 1.2-.4 2.3-1.8 1.8a5.4 5.4 0 0 0-3.2 0c-1.4.5-2.3-.6-1.8-1.8Z",
+    ],
+  };
+
+  for (const d of paths[name] || []) {
+    const path = svgElement("path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+
+  return svg;
+}
+
+function svgElement(tag) {
+  if (document.createElementNS) {
+    return document.createElementNS("http://www.w3.org/2000/svg", tag);
+  }
+  return document.createElement(tag);
+}
+
+function formatSpecies(value) {
+  const species = String(value || "").toLowerCase();
+  if (species === "cao" || species === "cachorro") {
+    return "C\u00e3o";
+  }
+  if (species === "gato") {
+    return "Gato";
+  }
+  return formatEnum(value);
+}
+
+function formatEnergy(value) {
+  const energy = String(value || "").toLowerCase();
+  if (energy === "baixo" || energy === "baixa") {
+    return "Baixo";
+  }
+  if (energy === "medio" || energy === "media") {
+    return "M\u00e9dio";
+  }
+  if (energy === "alto" || energy === "alta") {
+    return "Alto";
+  }
+  return formatEnum(value);
+}
+
+function carePillGrid(animal, convivencia, { compact = false } = {}) {
+  const items = [
+    carePill("Castrado", animal.castrado === false ? "Nao" : "Sim", animal.castrado === false ? "neutral" : "success"),
+    carePill("Vacinado", animal.vacinado === false ? "Nao" : "Sim", animal.vacinado === false ? "neutral" : "success"),
+    carePill("Vermifugado", animal.vermifugado === false ? "Nao" : "Sim", animal.vermifugado === false ? "neutral" : "success"),
+    carePill("Energia", formatEnum(animal.nivelEnergia), "info"),
+    carePill("Caes", formatBoolean(convivencia.caes), convivencia.caes ? "success" : "neutral"),
+    carePill("Gatos", formatBoolean(convivencia.gatos), convivencia.gatos ? "success" : "neutral"),
+  ];
+
+  if (!compact) {
+    items.push(carePill("Ambiente", animal.precisaEspaco ? "Quintal" : "Apartamento", "info"));
+  }
+
+  return element("div", { className: "care-pill-grid" }, items);
+}
+
+function carePill(label, value, tone = "neutral") {
+  return element("div", { className: `care-pill care-pill-${tone}` }, [
+    element("span", { text: label }),
+    element("strong", { text: value }),
+  ]);
+}
+
+function normalizeAnimalConvivencia(animal) {
+  const bomComAnimais = Boolean(animal?.bomComAnimais);
+  return {
+    caes: Boolean(animal?.bomComCaes ?? bomComAnimais),
+    gatos: Boolean(animal?.bomComGatos ?? bomComAnimais),
+  };
 }
 
 function getAnimalDisplayScore(animal) {

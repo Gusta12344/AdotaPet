@@ -72,7 +72,8 @@ public class AnimalController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataResgate,
             @RequestParam NivelEnergia nivelEnergia,
             @RequestParam(defaultValue = "false") boolean bomComCriancas,
-            @RequestParam(defaultValue = "false") boolean bomComAnimais,
+            @RequestParam(defaultValue = "false") boolean bomComCaes,
+            @RequestParam(defaultValue = "false") boolean bomComGatos,
             @RequestParam(defaultValue = "false") boolean precisaEspaco,
             @RequestParam(defaultValue = "false") boolean microchip,
             @RequestParam(defaultValue = "false") boolean castrado,
@@ -82,7 +83,7 @@ public class AnimalController {
             @RequestParam Integer protetorId,
             @RequestParam(value = "imagens", required = false) List<MultipartFile> imagens) {
         AnimalRequest request = new AnimalRequest(nome, especie, raca, idadeMeses, porte, sexo, dataResgate,
-                nivelEnergia, bomComCriancas, bomComAnimais, precisaEspaco, microchip, castrado, vermifugado,
+                nivelEnergia, bomComCriancas, bomComCaes, bomComGatos, precisaEspaco, microchip, castrado, vermifugado,
                 vacinado, descricao, protetorId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(animalService.cadastrarComArquivos(request, imagens));

@@ -1,6 +1,8 @@
 import { api } from "../api.js";
 import { enhanceSelectDropdowns } from "../dropdowns.js";
+import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
+import { readAdotanteId } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
 const list = $("#animais-preview");
@@ -20,9 +22,16 @@ const ANIMALS_PER_BATCH = 5;
 const COLLAPSE_ANIMATION_MS = 260;
 let allAnimais = [];
 let visibleAnimalCount = INITIAL_VISIBLE_ANIMALS;
+let favoriteIds = new Set();
 
 enhanceSelectDropdowns(toolbar);
-createHeaderAuthController();
+const headerAuth = createHeaderAuthController({
+  onLogin: () => {
+    syncFavoriteIds()
+      .then(renderAnimais)
+      .catch((error) => setFeedback(feedback, error.message, "error"));
+  },
+});
 
 async function loadAnimais() {
   if (!list) {
@@ -33,12 +42,21 @@ async function loadAnimais() {
 
   try {
     allAnimais = await api.get("/animais");
+    await syncFavoriteIds();
     resetPagination();
     renderAnimais();
     setFeedback(feedback, "");
   } catch (error) {
-    setFeedback(feedback, error.message, "error");
+    setFeedback(feedback, getAnimalListErrorMessage(error), "error");
   }
+}
+
+function getAnimalListErrorMessage(error) {
+  if (error?.status === 401) {
+    return "Nao foi possivel carregar a lista de animais. Essa lista e publica.";
+  }
+
+  return error?.message || "Nao foi possivel carregar a lista de animais.";
 }
 
 function renderAnimais() {
@@ -93,12 +111,48 @@ function resetPagination() {
 
 function appendAnimalCards(animais, { reveal = false } = {}) {
   for (const animal of animais) {
-    const card = renderAnimalCard({ animal, compact: true });
+    const card = renderAnimalCard({
+      animal,
+      compact: true,
+      isFavorite: favoriteIds.has(Number(animal.id)),
+      onFavoriteToggle: handleFavoriteToggle,
+    });
     if (reveal) {
       addClass(card, "animal-card-reveal");
     }
     list.append(card);
   }
+}
+
+async function syncFavoriteIds() {
+  const adotanteId = readCurrentAdotanteId();
+  favoriteIds = adotanteId ? await loadFavoriteIds(adotanteId) : new Set();
+}
+
+async function handleFavoriteToggle({ animal, button }) {
+  const adotanteId = readCurrentAdotanteId();
+  if (!adotanteId) {
+    setFeedback(feedback, "Entre como adotante para salvar favoritos.", "error");
+    headerAuth.openLoginModal();
+    return false;
+  }
+
+  button.disabled = true;
+  try {
+    const isFavorite = await toggleFavorite(animal, { adotanteId, favoriteIds });
+    applyFavoriteButtonState(button, animal, isFavorite);
+    setFeedback(feedback, isFavorite ? "Animal adicionado aos favoritos." : "Animal removido dos favoritos.");
+    return isFavorite;
+  } catch (error) {
+    setFeedback(feedback, error.message, "error");
+    return undefined;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function readCurrentAdotanteId() {
+  return globalThis.localStorage ? readAdotanteId(globalThis.localStorage) : null;
 }
 
 function collapseAnimalCardsFrom(startIndex) {

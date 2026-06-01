@@ -86,7 +86,8 @@ public class AnimalService {
         animal.setDataResgate(request.dataResgate());
         animal.setNivelEnergia(request.nivelEnergia());
         animal.setBomComCriancas(request.bomComCriancas());
-        animal.setBomComAnimais(request.bomComAnimais());
+        animal.setBomComCaes(request.bomComCaes());
+        animal.setBomComGatos(request.bomComGatos());
         animal.setPrecisaEspaco(request.precisaEspaco());
         animal.setMicrochip(request.microchip());
         animal.setCastrado(request.castrado());
@@ -150,7 +151,7 @@ public class AnimalService {
         if (!adotante.isTemCriancas() || animal.isBomComCriancas()) {
             score += 20;
         }
-        if (!adotante.isTemOutrosAnimais() || animal.isBomComAnimais()) {
+        if (!adotante.isTemOutrosAnimais() || animal.isBomComCaes() || animal.isBomComGatos()) {
             score += 20;
         }
         if (!animal.isPrecisaEspaco() || adotante.getTipoMoradia() == TipoMoradia.casa_com_quintal) {

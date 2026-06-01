@@ -8,6 +8,7 @@ const pages = [
   "index.html",
   "cadastro.html",
   "editar-dados.html",
+  "favoritos.html",
   "recomendados.html",
   "animal.html",
   "confirmacao.html",
@@ -17,6 +18,10 @@ const pages = [
 
 function readPage(page) {
   return fs.readFileSync(path.join(root, page), "utf8");
+}
+
+function normalizedHeader(page) {
+  return readPage(page).match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0].replace(/\r\n/g, "\n");
 }
 
 function localRefs(html) {
@@ -86,6 +91,50 @@ test("animal detail page uses the authenticated header and login modal", () => {
   assert.match(html, /data-auth-private/);
   assert.match(html, /data-account-menu/);
   assert.match(html, /data-login-modal/);
+});
+
+test("registration, recommended, animal detail and favorites pages keep the same header as the home page", () => {
+  const indexHeader = normalizedHeader("index.html");
+
+  assert.ok(indexHeader, "index header should exist");
+  assert.equal(normalizedHeader("cadastro.html"), indexHeader);
+  assert.equal(normalizedHeader("recomendados.html"), indexHeader);
+  assert.equal(normalizedHeader("animal.html"), indexHeader);
+  assert.equal(normalizedHeader("favoritos.html"), indexHeader);
+});
+
+test("recommended page uses the authenticated header and login modal", () => {
+  const html = readPage("recomendados.html");
+
+  assert.match(html, /data-auth-header/);
+  assert.match(html, /data-auth-private/);
+  assert.match(html, /data-account-menu/);
+  assert.match(html, /data-login-modal/);
+});
+
+test("registration page uses the authenticated header and login modal", () => {
+  const html = readPage("cadastro.html");
+
+  assert.match(html, /data-auth-header/);
+  assert.match(html, /data-auth-private/);
+  assert.match(html, /data-account-menu/);
+  assert.match(html, /data-login-modal/);
+});
+
+test("admin animal form accepts multiple uploaded images", () => {
+  const html = readPage("admin-painel.html");
+  const inputMatch = html.match(/<input[^>]+id="imagens"[^>]+>/);
+
+  assert.ok(inputMatch, "admin animal image input should exist");
+  assert.match(inputMatch[0], /name="imagens"/);
+  assert.match(inputMatch[0], /type="file"/);
+  assert.match(inputMatch[0], /multiple/);
+});
+
+test("favorite navigation points to the favorites page", () => {
+  const html = readPage("index.html");
+
+  assert.match(html, /class="favorite-button" href="favoritos\.html"/);
 });
 
 test("animal detail controller renders the premium detail sections", () => {

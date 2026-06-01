@@ -87,7 +87,8 @@ function animal(id) {
     idadeMeses: 18,
     nivelEnergia: "medio",
     status: "disponivel",
-    bomComAnimais: true,
+    bomComCaes: true,
+    bomComGatos: true,
     precisaEspaco: false,
     imagemUrls: [`/uploads/animais/animal-${id}.jpg`],
   };
@@ -188,4 +189,54 @@ test("home page reveals more animals in batches and shows an end message", async
   assert.equal(moreButton.hidden, false);
   assert.equal(lessButton.hidden, true);
   assert.equal(endMessage.textContent, "");
+});
+
+test("home page does not show login error when public animal list returns unauthorized", async () => {
+  const list = new TestElement("div");
+  const feedback = new TestElement("p");
+  const toolbar = new TestElement("form");
+  const search = new TestElement("input");
+  const statusFilter = new TestElement("select");
+  const speciesFilter = new TestElement("select");
+  const sizeFilter = new TestElement("select");
+  const ageFilter = new TestElement("select");
+  const moreButton = new TestElement("button");
+  const lessButton = new TestElement("button");
+  const endMessage = new TestElement("p");
+
+  const elements = new Map([
+    ["#animais-preview", list],
+    ["#home-feedback", feedback],
+    [".animal-toolbar", toolbar],
+    ["#animal-search", search],
+    ["#animal-status-filter", statusFilter],
+    ["#animal-species-filter", speciesFilter],
+    ["#animal-size-filter", sizeFilter],
+    ["#animal-age-filter", ageFilter],
+    [".more-button", moreButton],
+    [".less-button", lessButton],
+    ["#animais-end-message", endMessage],
+  ]);
+
+  globalThis.document = createDocumentMock(elements);
+  globalThis.window = {
+    setTimeout(callback) {
+      return setTimeout(callback, 0);
+    },
+  };
+  globalThis.fetch = async (url) => {
+    assert.equal(url, "http://localhost:8080/animais");
+    return {
+      ok: false,
+      status: 401,
+      async text() {
+        return "";
+      },
+    };
+  };
+
+  await import(`../js/pages/index.js?test=${Date.now()}-unauthorized`);
+  await waitFor(() => feedback.textContent === "Nao foi possivel carregar a lista de animais. Essa lista e publica.");
+
+  assert.notEqual(feedback.textContent, "CPF ou senha invalidos");
 });

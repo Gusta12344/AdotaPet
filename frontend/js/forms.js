@@ -147,7 +147,8 @@ export function buildAnimalPayload(data) {
     dataResgate: requireDate("dataResgate", readValue(data, "dataResgate")),
     nivelEnergia: requireEnum("nivelEnergia", readValue(data, "nivelEnergia"), ENUMS.nivelEnergia),
     bomComCriancas: readBoolean(data, "bomComCriancas"),
-    bomComAnimais: readBoolean(data, "bomComAnimais"),
+    bomComCaes: readBoolean(data, "bomComCaes"),
+    bomComGatos: readBoolean(data, "bomComGatos"),
     precisaEspaco: readBoolean(data, "precisaEspaco"),
     microchip: readBoolean(data, "microchip"),
     castrado: readBoolean(data, "castrado"),
@@ -178,10 +179,12 @@ export function buildAnimalFormData(form) {
   const source = form?._data || new FormData(form);
   const payload = buildAnimalPayload(source);
   const multipart = new FormData();
+  const bomComAnimais = payload.bomComCaes || payload.bomComGatos;
 
   for (const [key, value] of Object.entries(payload)) {
     multipart.append(key, String(value));
   }
+  multipart.append("bomComAnimais", String(bomComAnimais));
 
   const files = Array.from(form?.elements?.imagens?.files || []);
   for (const file of files) {

@@ -13,7 +13,7 @@ export function getHeaderAuthViewState(user) {
     privateActionsHidden: !isLoggedIn,
     accountHidden: !isLoggedIn,
     adminAreaHidden: !isAdmin,
-    greeting: isLoggedIn ? `Ola, ${user.nome}` : "",
+    greeting: isLoggedIn ? user.nome : "",
   };
 }
 

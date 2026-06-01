@@ -1,10 +1,15 @@
 import { api } from "../api.js";
+import { enhanceSelectDropdowns } from "../dropdowns.js";
 import { buildAdotantePayload } from "../forms.js";
+import { createHeaderAuthController } from "../header-auth.js";
 import { saveAdotanteId, saveCurrentUser } from "../state.js";
 import { $, setFeedback } from "../ui.js";
 
 const form = $("#cadastro-form");
 const feedback = $("#cadastro-feedback");
+
+createHeaderAuthController();
+enhanceSelectDropdowns(form);
 
 form?.addEventListener("submit", async (event) => {
   event.preventDefault();

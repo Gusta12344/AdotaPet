@@ -1,8 +1,11 @@
 package com.adotapet.backend.security;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -10,25 +13,46 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    public SecurityFilterChain publicSecurityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher(new OrRequestMatcher(List.of(
+                        new AntPathRequestMatcher("/**", HttpMethod.OPTIONS.name()),
+                        new AntPathRequestMatcher("/animais", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/animais/**", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/uploads/**", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/adotantes", HttpMethod.POST.name()),
+                        new AntPathRequestMatcher("/adotantes/**", HttpMethod.PUT.name()),
+                        new AntPathRequestMatcher("/adotantes/*/favoritos", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/adotantes/*/favoritos/*", HttpMethod.POST.name()),
+                        new AntPathRequestMatcher("/adotantes/*/favoritos/*", HttpMethod.DELETE.name()),
+                        new AntPathRequestMatcher("/adocoes", HttpMethod.POST.name()),
+                        new AntPathRequestMatcher("/auth/login", HttpMethod.POST.name()),
+                        new AntPathRequestMatcher("/admin/login", HttpMethod.POST.name()),
+                        new AntPathRequestMatcher("/error")
+                )))
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain adminSecurityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/animais/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/adotantes").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/adotantes/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/adocoes").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/admin/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/animais").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/animais/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/adocoes").hasRole("ADMIN")

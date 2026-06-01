@@ -60,8 +60,11 @@ public class Animal {
     @Column(name = "bom_com_criancas", nullable = false)
     private boolean bomComCriancas;
 
-    @Column(name = "bom_com_animais", nullable = false)
-    private boolean bomComAnimais;
+    @Column(name = "bom_com_caes", nullable = false)
+    private boolean bomComCaes;
+
+    @Column(name = "bom_com_gatos", nullable = false)
+    private boolean bomComGatos;
 
     @Column(name = "precisa_espaco", nullable = false)
     private boolean precisaEspaco;
@@ -192,12 +195,20 @@ public class Animal {
         this.bomComCriancas = bomComCriancas;
     }
 
-    public boolean isBomComAnimais() {
-        return bomComAnimais;
+    public boolean isBomComCaes() {
+        return bomComCaes;
     }
 
-    public void setBomComAnimais(boolean bomComAnimais) {
-        this.bomComAnimais = bomComAnimais;
+    public void setBomComCaes(boolean bomComCaes) {
+        this.bomComCaes = bomComCaes;
+    }
+
+    public boolean isBomComGatos() {
+        return bomComGatos;
+    }
+
+    public void setBomComGatos(boolean bomComGatos) {
+        this.bomComGatos = bomComGatos;
     }
 
     public boolean isPrecisaEspaco() {

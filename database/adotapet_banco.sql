@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS animal (
     data_resgate        DATE         NOT NULL,
     nivel_energia       ENUM('baixo', 'medio', 'alto')            NOT NULL,
     bom_com_criancas    TINYINT(1)   NOT NULL DEFAULT 0,
-    bom_com_animais     TINYINT(1)   NOT NULL DEFAULT 0,
+    bom_com_caes        TINYINT(1)   NOT NULL DEFAULT 0,
+    bom_com_gatos       TINYINT(1)   NOT NULL DEFAULT 0,
     precisa_espaco      TINYINT(1)   NOT NULL DEFAULT 0,          -- 1 = precisa de quintal
     microchip           TINYINT(1)   NOT NULL DEFAULT 0,
     castrado            TINYINT(1)   NOT NULL DEFAULT 0,
@@ -114,9 +115,25 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
 );
 
 -- ── Índices para performance ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS adotante_favorito (
+    adotante_id    INT      NOT NULL,
+    animal_id      INT      NOT NULL,
+    data_favorito  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (adotante_id, animal_id),
+    CONSTRAINT fk_favorito_adotante FOREIGN KEY (adotante_id)
+        REFERENCES adotante (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_favorito_animal FOREIGN KEY (animal_id)
+        REFERENCES animal (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 CREATE INDEX idx_animal_status ON animal (status);
 CREATE INDEX idx_animal_especie ON animal (especie);
 CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem);
+CREATE INDEX idx_favorito_animal ON adotante_favorito (animal_id);
 CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status);
 CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao);
 
@@ -143,87 +160,87 @@ INSERT INTO protetor (nome, email, telefone) VALUES
 
 -- ── animais ───────────────────────────────────────────────────
 INSERT INTO animal (nome, especie, raca, idade_meses, porte, sexo, data_resgate, nivel_energia,
-                    bom_com_criancas, bom_com_animais, precisa_espaco,
+                    bom_com_criancas, bom_com_caes, bom_com_gatos, precisa_espaco,
                     microchip, castrado, vermifugado, vacinado,
                     descricao, status, protetor_id)
 VALUES
     -- cães
-    ('Bolinha', 'cao', 'SRD',             24,  'pequeno', 'macho', '2024-01-15', 'alto',  1, 1, 0, 0, 1, 1, 1,
+    ('Bolinha', 'cao', 'SRD',             24,  'pequeno', 'macho', '2024-01-15', 'alto',  1, 1, 0, 0, 0, 1, 1, 1,
      'Bolinha é um cão alegre e brincalhão. Adora crianças e se dá bem com outros cães.',
      'disponivel', 1),
 
-    ('Thor',    'cao', 'Labrador',        36,  'grande',  'macho', '2023-11-08', 'alto',  1, 0, 1, 1, 1, 1, 1,
+    ('Thor',    'cao', 'Labrador',        36,  'grande',  'macho', '2023-11-08', 'alto',  1, 0, 0, 1, 1, 1, 1, 1,
      'Thor é forte, leal e cheio de energia. Precisa de espaço para correr e brincar.',
      'disponivel', 1),
 
-    ('Mel',     'cao', 'Poodle',          60,  'pequeno', 'femea', '2022-05-20', 'baixo', 1, 1, 0, 1, 1, 1, 1,
+    ('Mel',     'cao', 'Poodle',          60,  'pequeno', 'femea', '2022-05-20', 'baixo', 1, 1, 1, 0, 1, 1, 1, 1,
      'Mel é tranquila, carinhosa e adora colo. Ideal para apartamento.',
      'disponivel', 2),
 
-    ('Rex',     'cao', 'Pastor Alemão',   18,  'grande',  'macho', '2024-06-12', 'alto',  0, 0, 1, 0, 0, 1, 1,
+    ('Rex',     'cao', 'Pastor Alemão',   18,  'grande',  'macho', '2024-06-12', 'alto',  0, 0, 0, 1, 0, 0, 1, 1,
      'Rex é inteligente mas ainda está em treinamento social. Sem crianças pequenas.',
      'disponivel', 2),
 
-    ('Pipoca',  'cao', 'Dachshund',       12,  'pequeno', 'femea', '2025-03-04', 'medio', 1, 1, 0, 0, 0, 1, 1,
+    ('Pipoca',  'cao', 'Dachshund',       12,  'pequeno', 'femea', '2025-03-04', 'medio', 1, 1, 0, 0, 0, 0, 1, 1,
      'Pipoca é curiosa e ativa, mas se adapta bem a espaços menores.',
      'disponivel', 3),
 
     -- gatos
-    ('Mimi',   'gato', 'Siamês',          48,  'pequeno', 'femea', '2023-02-18', 'baixo', 1, 0, 0, 1, 1, 1, 1,
+    ('Mimi',   'gato', 'Siamês',          48,  'pequeno', 'femea', '2023-02-18', 'baixo', 1, 0, 0, 0, 1, 1, 1, 1,
      'Mimi é independente e tranquila. Prefere ambientes calmos.',
      'disponivel', 1),
 
-    ('Pelé',   'gato', 'SRD',              8,  'pequeno', 'macho', '2025-10-02', 'alto',  1, 1, 0, 0, 0, 1, 1,
+    ('Pelé',   'gato', 'SRD',              8,  'pequeno', 'macho', '2025-10-02', 'alto',  1, 0, 1, 0, 0, 0, 1, 1,
      'Pelé é um gatinho filhote super curioso e brincalhão.',
      'disponivel', 2),
 
-    ('Sombra', 'gato', 'SRD',             36,  'pequeno', 'macho', '2023-07-11', 'medio', 0, 1, 0, 0, 1, 1, 1,
+    ('Sombra', 'gato', 'SRD',             36,  'pequeno', 'macho', '2023-07-11', 'medio', 0, 0, 1, 0, 0, 1, 1, 1,
      'Sombra é tímido com crianças mas convive bem com outros gatos.',
      'disponivel', 3),
 
     -- animal em análise (para testar fluxo)
-    ('Duque',  'cao', 'Bulldog Francês',  24,  'pequeno', 'macho', '2023-12-22', 'baixo', 1, 1, 0, 1, 1, 1, 1,
+    ('Duque',  'cao', 'Bulldog Francês',  24,  'pequeno', 'macho', '2023-12-22', 'baixo', 1, 1, 0, 0, 1, 1, 1, 1,
      'Duque é calmo, carinhoso e se adapta bem a apartamento.',
      'em_analise', 1),
 
     -- mais animais disponíveis para a página inicial
-    ('Luna',   'cao', 'Golden Retriever', 30,  'grande',  'femea', '2023-03-12', 'alto',  1, 1, 1, 1, 1, 1, 1,
+    ('Luna',   'cao', 'Golden Retriever', 30,  'grande',  'femea', '2023-03-12', 'alto',  1, 1, 1, 1, 1, 1, 1, 1,
      'Luna é dócil, brincalhona e ama passeios longos com a família.',
      'disponivel', 1),
 
-    ('Nina',   'gato', 'SRD',             14,  'pequeno', 'femea', '2025-06-19', 'medio', 1, 1, 0, 0, 0, 1, 1,
+    ('Nina',   'gato', 'SRD',             14,  'pequeno', 'femea', '2025-06-19', 'medio', 1, 0, 1, 0, 0, 0, 1, 1,
      'Nina é curiosa, sociável e gosta de observar tudo pela janela.',
      'disponivel', 2),
 
-    ('Tobias', 'cao', 'Beagle',           42,  'medio',   'macho', '2022-10-05', 'alto',  1, 1, 0, 1, 1, 1, 1,
+    ('Tobias', 'cao', 'Beagle',           42,  'medio',   'macho', '2022-10-05', 'alto',  1, 1, 0, 0, 1, 1, 1, 1,
      'Tobias é farejador, animado e combina com tutores ativos.',
      'disponivel', 3),
 
-    ('Amora',  'gato', 'Persa',           72,  'pequeno', 'femea', '2021-09-17', 'baixo', 1, 0, 0, 1, 1, 1, 1,
+    ('Amora',  'gato', 'Persa',           72,  'pequeno', 'femea', '2021-09-17', 'baixo', 1, 0, 0, 0, 1, 1, 1, 1,
      'Amora é tranquila, carinhosa e prefere uma rotina mais calma.',
      'disponivel', 1),
 
-    ('Bento',  'cao', 'SRD',               7,  'medio',   'macho', '2025-11-14', 'medio', 1, 1, 0, 0, 0, 1, 1,
+    ('Bento',  'cao', 'SRD',               7,  'medio',   'macho', '2025-11-14', 'medio', 1, 1, 1, 0, 0, 0, 1, 1,
      'Bento é filhote, aprende rápido e está pronto para crescer em família.',
      'disponivel', 2),
 
-    ('Frida',  'gato', 'Angorá',          28,  'pequeno', 'femea', '2024-02-09', 'medio', 0, 1, 0, 1, 1, 1, 1,
+    ('Frida',  'gato', 'Angorá',          28,  'pequeno', 'femea', '2024-02-09', 'medio', 0, 0, 1, 0, 1, 1, 1, 1,
      'Frida é elegante, independente e convive bem com outros gatos.',
      'disponivel', 3),
 
-    ('Apolo',  'cao', 'Border Collie',    20,  'medio',   'macho', '2024-08-27', 'alto',  1, 1, 1, 1, 0, 1, 1,
+    ('Apolo',  'cao', 'Border Collie',    20,  'medio',   'macho', '2024-08-27', 'alto',  1, 1, 0, 1, 1, 0, 1, 1,
      'Apolo é muito inteligente, precisa de estímulos e adora aprender comandos.',
      'disponivel', 1),
 
-    ('Cacau',  'cao', 'Shih-tzu',         54,  'pequeno', 'femea', '2022-12-01', 'baixo', 1, 1, 0, 1, 1, 1, 1,
+    ('Cacau',  'cao', 'Shih-tzu',         54,  'pequeno', 'femea', '2022-12-01', 'baixo', 1, 1, 1, 0, 1, 1, 1, 1,
      'Cacau é companheira, calma e se adapta muito bem a apartamento.',
      'disponivel', 2),
 
-    ('Jade',   'gato', 'SRD',             10,  'pequeno', 'femea', '2025-09-10', 'alto',  1, 1, 0, 0, 0, 1, 1,
+    ('Jade',   'gato', 'SRD',             10,  'pequeno', 'femea', '2025-09-10', 'alto',  1, 0, 1, 0, 0, 0, 1, 1,
      'Jade é filhote, brincalhona e gosta de interagir com pessoas.',
      'disponivel', 3),
 
-    ('Gaia',   'outro', 'Coelha',         16,  'pequeno', 'femea', '2024-05-23', 'medio', 1, 0, 0, 0, 1, 1, 1,
+    ('Gaia',   'outro', 'Coelha',         16,  'pequeno', 'femea', '2024-05-23', 'medio', 1, 0, 0, 0, 0, 1, 1, 1,
      'Gaia é uma coelha dócil, limpa e acostumada a ambientes internos.',
      'disponivel', 1);
 

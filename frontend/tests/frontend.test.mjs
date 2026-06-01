@@ -30,10 +30,18 @@ import {
   saveCurrentUser,
 } from "../js/state.js";
 import {
+  applyFavoriteButtonState,
+  getFavoriteButtonState,
+} from "../js/favorites.js";
+import {
+  galleryUrls,
+} from "../js/animal-gallery.js";
+import {
   formatAge,
   formatBoolean,
   formatEnum,
   getScoreLabel,
+  renderAnimalCard,
 } from "../js/ui.js";
 import {
   ApiError,
@@ -75,6 +83,7 @@ class TestElement {
     this.children = [];
     this.attributes = {};
     this.className = "";
+    this.dataset = {};
     this.textContent = "";
     this.value = "";
     this.listeners = new Map();
@@ -82,8 +91,19 @@ class TestElement {
 
   append(...children) {
     for (const child of children) {
-      child.parentNode = this;
+      if (child && typeof child === "object") {
+        child.parentNode = this;
+      }
       this.children.push(child);
+    }
+  }
+
+  prepend(...children) {
+    for (const child of children.reverse()) {
+      if (child && typeof child === "object") {
+        child.parentNode = this;
+      }
+      this.children.unshift(child);
     }
   }
 
@@ -111,6 +131,7 @@ class TestElement {
     this.dispatchEvent({
       type: "click",
       currentTarget: this,
+      preventDefault() {},
       stopPropagation() {},
     });
   }
@@ -123,6 +144,72 @@ function documentMock() {
     },
   };
 }
+
+function withDocumentMock(callback) {
+  const previousDocument = globalThis.document;
+  globalThis.document = documentMock();
+  try {
+    return callback();
+  } finally {
+    globalThis.document = previousDocument;
+  }
+}
+
+function textTree(node) {
+  if (typeof node === "string") {
+    return node;
+  }
+  return `${node?.textContent || ""}${(node?.children || []).map(textTree).join("")}`;
+}
+
+function findByClass(node, className) {
+  if (!node || typeof node === "string") {
+    return null;
+  }
+  const classes = String(node.className || "").split(/\s+/);
+  if (classes.includes(className)) {
+    return node;
+  }
+  for (const child of node.children || []) {
+    const match = findByClass(child, className);
+    if (match) {
+      return match;
+    }
+  }
+  return null;
+}
+
+function findAllByClass(node, className, matches = []) {
+  if (!node || typeof node === "string") {
+    return matches;
+  }
+  const classes = String(node.className || "").split(/\s+/);
+  if (classes.includes(className)) {
+    matches.push(node);
+  }
+  for (const child of node.children || []) {
+    findAllByClass(child, className, matches);
+  }
+  return matches;
+}
+
+const animalCardFixture = {
+  id: 8,
+  nome: "Nina",
+  especie: "gato",
+  porte: "pequeno",
+  idadeMeses: 14,
+  status: "disponivel",
+  nivelEnergia: "medio",
+  castrado: true,
+  vacinado: true,
+  vermifugado: true,
+  bomComCaes: false,
+  bomComGatos: true,
+  precisaEspaco: false,
+  descricao: "Nina e curiosa, sociavel e gosta de observar tudo pela janela.",
+  imagemUrls: ["/uploads/animais/nina.jpg"],
+};
 
 test("buildAdotantePayload normalizes text, booleans and enum values accepted by the API", () => {
   const payload = buildAdotantePayload(formData([
@@ -216,6 +303,7 @@ test("buildAnimalPayload keeps admin-created animals within the API enum contrac
     ["dataResgate", "2025-08-14"],
     ["nivelEnergia", "alto"],
     ["bomComCriancas", "on"],
+    ["bomComCaes", "on"],
     ["precisaEspaco", "on"],
     ["microchip", "on"],
     ["castrado", "on"],
@@ -235,7 +323,8 @@ test("buildAnimalPayload keeps admin-created animals within the API enum contrac
     dataResgate: "2025-08-14",
     nivelEnergia: "alto",
     bomComCriancas: true,
-    bomComAnimais: false,
+    bomComCaes: true,
+    bomComGatos: false,
     precisaEspaco: true,
     microchip: true,
     castrado: true,
@@ -268,6 +357,9 @@ test("buildAnimalFormData appends normalized animal fields and uploaded image fi
   assert.equal(payload.get("sexo"), "femea");
   assert.equal(payload.get("dataResgate"), "2026-01-20");
   assert.equal(payload.get("bomComCriancas"), "false");
+  assert.equal(payload.get("bomComCaes"), "false");
+  assert.equal(payload.get("bomComGatos"), "false");
+  assert.equal(payload.get("bomComAnimais"), "false");
   assert.equal(payload.get("microchip"), "false");
   assert.equal(payload.get("castrado"), "false");
   assert.equal(payload.get("vermifugado"), "false");
@@ -341,6 +433,76 @@ test("chooseAnimalImageUrl reuses cached fallback image URLs without calling ran
 
   assert.equal(firstUrl, "https://images.example.com/cached-dog.jpg");
   assert.equal(secondUrl, "https://images.example.com/cached-dog.jpg");
+});
+
+test("galleryUrls returns only the registered animal images", () => {
+  assert.deepEqual(galleryUrls({
+    imagemUrls: [" /uploads/animais/mimi-1.png ", "", "/uploads/animais/mimi-2.jpg"],
+  }), [
+    "/uploads/animais/mimi-1.png",
+    "/uploads/animais/mimi-2.jpg",
+  ]);
+  assert.deepEqual(galleryUrls({ imagemUrls: ["/uploads/animais/mimi.png"] }), ["/uploads/animais/mimi.png"]);
+  assert.equal(galleryUrls({
+    imagemUrls: ["1.png", "2.png", "3.png", "4.png", "5.png", "6.png"],
+  }).length, 6);
+  assert.deepEqual(galleryUrls({ imagemUrls: [] }), [""]);
+});
+
+test("renderAnimalCard presents recommendations as a professional match card", () => {
+  const card = withDocumentMock(() => renderAnimalCard({
+    animal: animalCardFixture,
+    score: 100,
+    isFavorite: true,
+  }));
+  const text = textTree(card);
+
+  assert.match(card.className, /animal-card-match/);
+  assert.match(text, /Alta compatibilidade/);
+  assert.match(text, /Por que combina com voc\u00ea/);
+  assert.match(text, /N\u00edvel de energia compat\u00edvel/);
+  assert.match(text, /M\u00e9dio/);
+  assert.match(text, /100%/);
+  assert.equal(findByClass(card, "score"), null);
+  assert.ok(findByClass(card, "match-score-panel"));
+  assert.ok(findByClass(card, "match-meter"));
+  assert.ok(findByClass(card, "match-meter-fill"));
+  assert.ok(findByClass(card, "match-reasons"));
+  assert.equal(findAllByClass(card, "match-reason-icon").length, 3);
+  assert.equal(findAllByClass(card, "care-pill").length, 0);
+  assert.ok(findByClass(card, "button-save-icon-only"));
+  assert.equal(findByClass(card, "animal-facts"), null);
+});
+
+test("renderAnimalCard keeps compact cards clean with chips and care pills", () => {
+  const card = withDocumentMock(() => renderAnimalCard({
+    animal: animalCardFixture,
+    compact: true,
+  }));
+  const text = textTree(card);
+
+  assert.match(card.className, /animal-card-premium/);
+  assert.match(card.className, /animal-card-compact/);
+  assert.match(text, /Nina/);
+  assert.match(text, /Gato/);
+  assert.match(text, /Pequeno/);
+  assert.ok(findByClass(card, "animal-card-chips"));
+  assert.ok(findByClass(card, "care-pill-grid"));
+  assert.equal(findByClass(card, "animal-facts"), null);
+});
+
+test("renderAnimalCard routes the save CTA through favorite toggling", () => {
+  let toggledAnimalId = null;
+  const card = withDocumentMock(() => renderAnimalCard({
+    animal: animalCardFixture,
+    onFavoriteToggle({ animal }) {
+      toggledAnimalId = animal.id;
+    },
+  }));
+
+  findByClass(card, "button-save").click();
+
+  assert.equal(toggledAnimalId, animalCardFixture.id);
 });
 
 test("enhanceSelectDropdown opens with animation state and syncs the native select", () => {
@@ -434,7 +596,7 @@ test("header auth state hides private actions until the user signs in", () => {
     privateActionsHidden: false,
     accountHidden: false,
     adminAreaHidden: true,
-    greeting: "Ola, Mariana Costa",
+    greeting: "Mariana Costa",
   });
 
   assert.deepEqual(getHeaderAuthViewState({ nome: "Administrador AdotaPet", tipo: "admin" }), {
@@ -444,8 +606,24 @@ test("header auth state hides private actions until the user signs in", () => {
     privateActionsHidden: false,
     accountHidden: false,
     adminAreaHidden: false,
-    greeting: "Ola, Administrador AdotaPet",
+    greeting: "Administrador AdotaPet",
   });
+});
+
+test("favorite button state marks favorited animals with a pressed red heart", () => {
+  assert.deepEqual(getFavoriteButtonState({ nome: "Mimi" }, true), {
+    className: "favorite-toggle favorite-toggle-active",
+    ariaLabel: "Remover Mimi dos favoritos",
+    ariaPressed: "true",
+    title: "Remover dos favoritos",
+  });
+
+  const button = new TestElement("button");
+  applyFavoriteButtonState(button, { nome: "Mimi" }, true);
+
+  assert.equal(button.className, "favorite-toggle favorite-toggle-active");
+  assert.equal(button.getAttribute("aria-label"), "Remover Mimi dos favoritos");
+  assert.equal(button.getAttribute("aria-pressed"), "true");
 });
 
 test("formatCpfForLogin masks CPF while the user types", () => {
@@ -537,4 +715,28 @@ test("createApiClient sends multipart form data without forcing JSON headers", a
   assert.equal(calls[0].options.body, multipart);
   assert.equal(calls[0].options.headers["Content-Type"], undefined);
   assert.match(calls[0].options.headers.Authorization, /^Basic /);
+});
+
+test("createApiClient sends DELETE requests without a JSON body", async () => {
+  const calls = [];
+  const client = createApiClient({
+    baseUrl: "http://localhost:8080",
+    fetchImpl: async (url, options) => {
+      calls.push({ url, options });
+      return {
+        ok: true,
+        status: 204,
+        async text() {
+          return "";
+        },
+      };
+    },
+  });
+
+  await client.delete("/adotantes/7/favoritos/3");
+
+  assert.equal(calls[0].url, "http://localhost:8080/adotantes/7/favoritos/3");
+  assert.equal(calls[0].options.method, "DELETE");
+  assert.equal(calls[0].options.body, undefined);
+  assert.equal(calls[0].options.headers["Content-Type"], undefined);
 });

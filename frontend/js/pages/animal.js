@@ -1,5 +1,7 @@
 import { api } from "../api.js";
+import { galleryUrls } from "../animal-gallery.js";
 import { buildSolicitacaoPayload } from "../forms.js";
+import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
 import { readAdotanteId, saveLastSolicitacao } from "../state.js";
 import { $, clearNode, element, formatAge, formatBoolean, formatEnum, renderAnimalImage, setFeedback } from "../ui.js";
@@ -13,9 +15,11 @@ const params = new URLSearchParams(window.location.search);
 const animalId = Number.parseInt(params.get("id"), 10);
 
 let loadedAnimal = null;
+let favoriteIds = new Set();
 
 function renderDetail(animal) {
   clearNode(detail);
+  const convivencia = normalizeConvivencia(animal);
 
   const actionBar = element("div", { className: "detail-action-bar" });
   if (action) {
@@ -65,7 +69,7 @@ function renderDetail(animal) {
       element("p", { className: "detail-kicker", text: `Conheca ${animal.nome}` }),
       element("div", { className: "detail-name-row" }, [
         element("h1", { className: "detail-animal-name", text: animal.nome }),
-        heartIcon(),
+        heartIcon(animal),
       ]),
       element("p", {
         className: "detail-description",
@@ -88,9 +92,9 @@ function renderDetail(animal) {
         ], "clipboard", "main"),
         element("div", { className: "detail-side-stack" }, [
           detailSection("Convivencia", [
-            detailRow("Criancas", formatBoolean(animal.bomComCriancas), { tone: animal.bomComCriancas ? "success" : "danger" }),
-            detailRow("Outros caes", formatBoolean(animal.bomComAnimais), { tone: animal.bomComAnimais ? "success" : "danger" }),
-            detailRow("Gatos", formatBoolean(Boolean(animal.bomComGatos)), { tone: animal.bomComGatos ? "success" : "danger" }),
+            detailRow("Criancas", formatBoolean(convivencia.criancas), { tone: convivencia.criancas ? "success" : "danger" }),
+            detailRow("Caes", formatBoolean(convivencia.caes), { tone: convivencia.caes ? "success" : "danger" }),
+            detailRow("Gatos", formatBoolean(convivencia.gatos), { tone: convivencia.gatos ? "success" : "danger" }),
           ], "users"),
           detailSection("Cuidados", [
             detailRow("Nivel de energia", energyMeter(animal.nivelEnergia)),
@@ -103,6 +107,15 @@ function renderDetail(animal) {
       actionBar,
     ]),
   ]));
+}
+
+function normalizeConvivencia(animal) {
+  const bomComAnimais = Boolean(animal?.bomComAnimais);
+  return {
+    criancas: Boolean(animal?.bomComCriancas),
+    caes: Boolean(animal?.bomComCaes ?? bomComAnimais),
+    gatos: Boolean(animal?.bomComGatos ?? bomComAnimais),
+  };
 }
 
 function detailSection(title, rows, iconName = "", variant = "") {
@@ -167,7 +180,12 @@ function protectorSection(animal) {
   ]);
 }
 
-function heartIcon() {
+function heartIcon(animal) {
+  const button = element("button", {
+    className: "detail-favorite-toggle",
+    type: "button",
+    dataset: { animalId: animal.id },
+  });
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("class", "detail-heart");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -175,7 +193,10 @@ function heartIcon() {
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
   path.setAttribute("d", "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z");
   svg.append(path);
-  return svg;
+  button.append(svg);
+  applyFavoriteButtonState(button, animal, favoriteIds.has(Number(animal.id)), { baseClass: "detail-favorite-toggle" });
+  button.addEventListener("click", () => handleFavoriteToggle(button, animal));
+  return button;
 }
 
 function adoptIcon() {
@@ -259,23 +280,6 @@ function energyMeter(level) {
     meter.append(bolt);
   }
   return meter;
-}
-
-function galleryUrls(animal) {
-  const urls = Array.isArray(animal?.imagemUrls)
-    ? animal.imagemUrls.map((url) => String(url || "").trim()).filter(Boolean).slice(0, 5)
-    : [];
-
-  if (!urls.length) {
-    return ["", "", "", "", ""];
-  }
-
-  const baseLength = urls.length;
-  while (urls.length < 5) {
-    urls.push(urls[urls.length % baseLength]);
-  }
-
-  return urls;
 }
 
 function animalForImage(animal, url) {
@@ -368,6 +372,7 @@ async function loadAnimal() {
 
   try {
     loadedAnimal = await api.get(`/animais/${animalId}`);
+    await syncFavoriteIds();
     renderDetail(loadedAnimal);
     setFeedback(feedback, "");
   } catch (error) {
@@ -382,7 +387,7 @@ async function loadAnimal() {
 }
 
 action?.addEventListener("click", async () => {
-  const adotanteId = readAdotanteId(localStorage);
+  const adotanteId = readCurrentAdotanteId();
   if (!adotanteId) {
     setFeedback(feedback, "Entre como adotante para solicitar a adocao.", "error");
     headerAuth.openLoginModal();
@@ -400,5 +405,34 @@ action?.addEventListener("click", async () => {
     setFeedback(feedback, error.message, "error");
   }
 });
+
+async function syncFavoriteIds() {
+  const adotanteId = readCurrentAdotanteId();
+  favoriteIds = adotanteId ? await loadFavoriteIds(adotanteId) : new Set();
+}
+
+async function handleFavoriteToggle(button, animal) {
+  const adotanteId = readCurrentAdotanteId();
+  if (!adotanteId) {
+    setFeedback(feedback, "Entre como adotante para salvar favoritos.", "error");
+    headerAuth.openLoginModal();
+    return;
+  }
+
+  button.disabled = true;
+  try {
+    const isFavorite = await toggleFavorite(animal, { adotanteId, favoriteIds });
+    applyFavoriteButtonState(button, animal, isFavorite, { baseClass: "detail-favorite-toggle" });
+    setFeedback(feedback, isFavorite ? "Animal adicionado aos favoritos." : "Animal removido dos favoritos.");
+  } catch (error) {
+    setFeedback(feedback, error.message, "error");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function readCurrentAdotanteId() {
+  return globalThis.localStorage ? readAdotanteId(globalThis.localStorage) : null;
+}
 
 loadAnimal();

@@ -123,7 +123,12 @@ export function createApiClient({
     put(path, body, options = {}) {
       return request(path, { ...options, method: "PUT", body });
     },
+    delete(path, options = {}) {
+      return request(path, { ...options, method: "DELETE" });
+    },
   };
 }
 
-export const api = createApiClient();
+export const api = createApiClient({
+  fetchImpl: (...args) => globalThis.fetch(...args),
+});
