@@ -1,6 +1,7 @@
 const ADOTANTE_ID_KEY = "adotapet.adotanteId";
 const LAST_SOLICITACAO_KEY = "adotapet.lastSolicitacao";
 const CURRENT_USER_KEY = "adotapet.currentUser";
+const LOGIN_ON_HOME_KEY = "adotapet.loginOnHome";
 const PROFILE_ENUMS = {
   tipoMoradia: ["apartamento", "casa_sem_quintal", "casa_com_quintal"],
   nivelAtividade: ["sedentario", "moderado", "ativo"],
@@ -20,6 +21,23 @@ export function saveAdotanteId(storage, id) {
 export function readAdotanteId(storage) {
   const number = Number.parseInt(storage.getItem(ADOTANTE_ID_KEY), 10);
   return Number.isInteger(number) && number > 0 ? number : null;
+}
+
+export function readAuthenticatedAdotanteId({
+  sessionStorage = globalThis.sessionStorage,
+  localStorage = globalThis.localStorage,
+} = {}) {
+  const user = sessionStorage ? readCurrentUser(sessionStorage) : null;
+  if (!user || user.tipo !== "adotante") {
+    clearStoredAdotanteId(localStorage);
+    return null;
+  }
+
+  if (localStorage && readAdotanteId(localStorage) !== user.id) {
+    saveAdotanteId(localStorage, user.id);
+  }
+
+  return user.id;
 }
 
 export function clearAdotanteId(storage) {
@@ -101,6 +119,25 @@ export function readCurrentUser(storage) {
 
 export function clearCurrentUser(storage) {
   storage.removeItem(CURRENT_USER_KEY);
+}
+
+export function requestLoginOnHome(storage = globalThis.sessionStorage) {
+  storage?.setItem(LOGIN_ON_HOME_KEY, "1");
+}
+
+export function consumeLoginOnHome(storage = globalThis.sessionStorage) {
+  if (!storage || storage.getItem(LOGIN_ON_HOME_KEY) !== "1") {
+    return false;
+  }
+
+  storage.removeItem(LOGIN_ON_HOME_KEY);
+  return true;
+}
+
+function clearStoredAdotanteId(storage) {
+  if (storage) {
+    clearAdotanteId(storage);
+  }
 }
 
 function normalizeProfileFields(user) {

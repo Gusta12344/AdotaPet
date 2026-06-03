@@ -15,15 +15,15 @@
           <span class="brand-text">Adota<span>Pet</span></span>
         </a>
         <div class="nav-links">
-          <a href="recomendados.html">Recomendados</a>
+          <a href="recomendados.html" data-auth-private hidden>Recomendados</a>
         </div>
         <div class="nav-actions" aria-label="Acoes rapidas" data-auth-header>
-          <button class="icon-button has-badge" type="button" aria-label="Notificacoes" data-auth-private hidden>
+          <button class="icon-button has-badge" type="button" aria-label="Notificacoes" aria-haspopup="dialog" aria-expanded="false" data-notifications-toggle data-auth-private hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M15 17H9a4 4 0 0 0 6 0Z"/>
               <path d="M18 14v-3a6 6 0 1 0-12 0v3l-2 2h16l-2-2Z"/>
             </svg>
-            <span class="notification-badge">2</span>
+            <span class="notification-badge" data-notification-badge hidden></span>
           </button>
           <a class="favorite-button" href="favoritos.html" data-auth-private hidden>
             <svg viewBox="0 0 24 24" aria-hidden="true">

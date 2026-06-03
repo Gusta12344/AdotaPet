@@ -2,7 +2,7 @@ import { api } from "../api.js";
 import { enhanceSelectDropdowns } from "../dropdowns.js";
 import { buildAdotanteUpdatePayload } from "../forms.js";
 import { createHeaderAuthController } from "../header-auth.js";
-import { readCurrentUser, saveCurrentUser } from "../state.js";
+import { readCurrentUser, requestLoginOnHome, saveCurrentUser } from "../state.js";
 import { $, setFeedback } from "../ui.js";
 
 const form = $("#editar-dados-form");
@@ -15,6 +15,7 @@ const headerAuth = createHeaderAuthController({
       loadProfile();
     }
   },
+  onLogout: redirectGuestToHomeLogin,
 });
 
 enhanceSelectDropdowns(form);
@@ -24,8 +25,7 @@ function loadProfile() {
   const user = readCurrentUser(sessionStorage);
 
   if (!user || user.tipo !== "adotante") {
-    setFeedback(feedback, "Entre como adotante para editar seus dados pessoais.", "error");
-    headerAuth.openLoginModal();
+    redirectGuestToHomeLogin();
     return;
   }
 
@@ -66,7 +66,7 @@ form?.addEventListener("submit", async (event) => {
   const currentUser = readCurrentUser(sessionStorage);
   if (!currentUser || currentUser.tipo !== "adotante") {
     setFeedback(feedback, "Sessao de adotante nao encontrada. Faca login novamente.", "error");
-    headerAuth.openLoginModal();
+    redirectGuestToHomeLogin();
     return;
   }
 
@@ -119,4 +119,16 @@ function setControlChecked(name, checked) {
 function resetPasswordFields() {
   setControlValue("senhaAtual", "");
   setControlValue("novaSenha", "");
+}
+
+function redirectGuestToHomeLogin() {
+  requestLoginOnHome();
+
+  if (globalThis.window?.location) {
+    globalThis.window.location.href = "index.html?login=required";
+    return;
+  }
+
+  setFeedback(feedback, "Entre como adotante para editar seus dados pessoais.", "error");
+  headerAuth.openLoginModal();
 }

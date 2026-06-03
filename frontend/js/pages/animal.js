@@ -3,14 +3,22 @@ import { galleryUrls } from "../animal-gallery.js";
 import { buildSolicitacaoPayload } from "../forms.js";
 import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
-import { readAdotanteId, saveLastSolicitacao } from "../state.js";
+import { readAuthenticatedAdotanteId, saveLastSolicitacao } from "../state.js";
 import { $, clearNode, element, formatAge, formatBoolean, formatEnum, renderAnimalImage, setFeedback } from "../ui.js";
 
 const detail = $("#animal-detail");
 const feedback = $("#animal-feedback");
 const action = $("#solicitar-adocao");
 const actionsHost = $(".animal-detail-actions");
-const headerAuth = createHeaderAuthController();
+const headerAuth = createHeaderAuthController({
+  onLogin(user) {
+    if (user?.tipo === "adotante" && loadedAnimal) {
+      syncFavoriteIds()
+        .then(() => renderDetail(loadedAnimal))
+        .catch((error) => setFeedback(feedback, error.message, "error"));
+    }
+  },
+});
 const params = new URLSearchParams(window.location.search);
 const animalId = Number.parseInt(params.get("id"), 10);
 
@@ -432,7 +440,7 @@ async function handleFavoriteToggle(button, animal) {
 }
 
 function readCurrentAdotanteId() {
-  return globalThis.localStorage ? readAdotanteId(globalThis.localStorage) : null;
+  return readAuthenticatedAdotanteId();
 }
 
 loadAnimal();

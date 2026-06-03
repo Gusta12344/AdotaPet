@@ -1,5 +1,6 @@
 import { chooseAnimalImageUrl, fallbackAnimalImageUrl, getCachedAnimalImageUrl } from "./images.js";
 import { applyFavoriteButtonState } from "./favorites.js";
+import { showToast } from "./notifications.js";
 
 export function $(selector, root = document) {
   return root.querySelector(selector);
@@ -51,6 +52,14 @@ export function setFeedback(target, message, type = "info") {
 
   target.textContent = message || "";
   target.className = message ? `feedback feedback-${type}` : "feedback";
+
+  if (message && ["success", "error"].includes(type)) {
+    showToast({
+      title: type === "success" ? "Atualizacao realizada" : "Atencao",
+      body: message,
+      type,
+    });
+  }
 }
 
 export function formatEnum(value) {
@@ -108,13 +117,16 @@ export function getScoreLabel(score) {
 
 export function renderAnimalCard({ animal, score = null, compact = false, isFavorite = false, onFavoriteToggle = null }) {
   const hasExplicitScore = score !== null && score !== undefined;
-  const displayScore = score ?? getAnimalDisplayScore(animal);
+  const isHomeCard = compact;
+  const isRecommendationCard = hasExplicitScore && !isHomeCard;
+  const displayScore = normalizeScore(score ?? getAnimalDisplayScore(animal));
   const convivencia = normalizeAnimalConvivencia(animal);
   const card = element("article", {
     className: [
       "animal-card",
-      hasExplicitScore ? "animal-card-match" : "animal-card-premium",
+      isRecommendationCard ? "animal-card-match" : "animal-card-premium",
       compact ? "animal-card-compact" : "",
+      isHomeCard ? "animal-card-home" : "",
     ].filter(Boolean).join(" "),
   });
   const media = element("div", { className: "animal-card-media" }, [
@@ -122,18 +134,19 @@ export function renderAnimalCard({ animal, score = null, compact = false, isFavo
     element("span", { className: "animal-card-image-shade", "aria-hidden": "true" }),
   ]);
 
-  if (!hasExplicitScore) {
+  if (!isRecommendationCard) {
     media.append(element("div", { className: "score" }, [
-      element("span", { text: "Compatibilidade" }),
       element("strong", { text: `${displayScore}%` }),
+      element("span", { text: "compatibilidade" }),
     ]));
   }
 
   let saveButton = null;
+  const useIconOnlySave = isRecommendationCard || isHomeCard;
   const saveButtonClassName = (favorite) => [
     "button",
     "button-save",
-    hasExplicitScore ? "button-save-icon-only" : "",
+    useIconOnlySave ? "button-save-icon-only" : "",
     favorite ? "button-save-active" : "",
   ].filter(Boolean).join(" ");
   const syncSaveButton = (favorite) => {
@@ -168,13 +181,13 @@ export function renderAnimalCard({ animal, score = null, compact = false, isFavo
   favoriteButton.addEventListener("click", requestFavoriteToggle);
   media.append(favoriteButton);
 
-  if (animal.status && !hasExplicitScore) {
-    media.append(element("span", { className: "status-tag", text: formatEnum(animal.status) }));
+  if (animal.status && !isRecommendationCard) {
+    media.append(element("span", { className: "status-tag", text: formatStatus(animal.status) }));
   }
 
   card.append(media);
 
-  const header = hasExplicitScore
+  const header = isRecommendationCard
     ? element("div", { className: "animal-card-header animal-card-match-header" }, [
       element("div", {}, [
         element("h3", { text: animal.nome }),
@@ -183,27 +196,33 @@ export function renderAnimalCard({ animal, score = null, compact = false, isFavo
       element("span", { className: "animal-card-energy-badge", text: formatEnergy(animal.nivelEnergia) }),
     ])
     : element("div", { className: "animal-card-header" }, [
-      element("div", {}, [
+      element("div", { className: "animal-card-title-group" }, [
         element("h3", { text: animal.nome }),
-        element("p", { className: "muted", text: `${formatEnum(animal.especie)} - ${formatEnum(animal.porte)} - ${formatAge(animal.idadeMeses)}` }),
+        element("p", { className: "muted animal-card-meta", text: `${formatSpecies(animal.especie)} \u2022 ${formatEnum(animal.porte)}` }),
+        element("p", { className: "muted animal-card-age", text: formatAge(animal.idadeMeses) }),
       ]),
+      isHomeCard ? element("span", { className: "animal-size-tag" }, [
+        icon("paw"),
+        element("span", { text: formatEnum(animal.porte) }),
+      ]) : null,
     ]);
 
   const body = element("div", { className: "animal-card-body" }, [
-    hasExplicitScore ? matchPanel(displayScore) : null,
+    isRecommendationCard ? matchPanel(displayScore) : null,
     header,
-    hasExplicitScore ? null : animalChips(animal),
+    isRecommendationCard || isHomeCard ? null : animalChips(animal),
   ]);
 
-  if (animal.descricao && !compact) {
+  if (animal.descricao && (!compact || isHomeCard)) {
     body.append(element("p", { className: "animal-description", text: animal.descricao }));
   }
 
-  if (hasExplicitScore) {
+  if (isRecommendationCard) {
     body.append(matchReasonsPanel(animal, convivencia));
     body.append(matchChips(animal));
   } else {
-    body.append(carePillGrid(animal, convivencia, { compact }));
+    body.append(carePillGrid(animal, convivencia));
+    body.append(environmentSummary(animal));
   }
 
   saveButton = element("button", {
@@ -212,7 +231,7 @@ export function renderAnimalCard({ animal, score = null, compact = false, isFavo
     "aria-pressed": isFavorite ? "true" : "false",
     "aria-label": isFavorite ? `Remover ${animal.nome} dos favoritos` : `Salvar ${animal.nome} nos favoritos`,
     title: isFavorite ? "Remover dos favoritos" : "Salvar nos favoritos",
-  }, hasExplicitScore ? [
+  }, useIconOnlySave ? [
     element("span", { className: "button-save-icon", "aria-hidden": "true" }),
   ] : [
     element("span", { className: "button-save-icon", "aria-hidden": "true" }),
@@ -277,7 +296,7 @@ function chip(text, variant = "") {
 }
 
 function matchPanel(score) {
-  const safeScore = Math.max(0, Math.min(Number(score) || 0, 100));
+  const safeScore = normalizeScore(score);
   return element("section", { className: "match-panel match-score-panel", "aria-label": "Compatibilidade" }, [
     element("div", { className: "match-panel-header" }, [
       element("span", { text: getScoreLabel(safeScore) }),
@@ -328,10 +347,39 @@ function matchReasons(animal, convivencia) {
 
 function icon(name) {
   const svg = svgElement("svg");
+  svg.setAttribute("class", `animal-icon animal-icon-${name}`);
   svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
 
   const paths = {
+    building: [
+      "M4 21V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v16",
+      "M17 9h1a2 2 0 0 1 2 2v10",
+      "M8 7h.01",
+      "M13 7h.01",
+      "M8 11h.01",
+      "M13 11h.01",
+      "M8 15h.01",
+      "M13 15h.01",
+      "M3 21h18",
+    ],
+    cat: [
+      "M5 8 7 3l4 3h2l4-3 2 5v5a7 7 0 0 1-14 0V8Z",
+      "M9 12h.01",
+      "M15 12h.01",
+      "M11 15h2",
+      "m8 16-3 2",
+      "m16 16 3 2",
+    ],
+    dog: [
+      "M5 10V6l4 3h6l4-3v4",
+      "M6 10a6 6 0 0 0 12 0",
+      "M9 12h.01",
+      "M15 12h.01",
+      "M11 15h2",
+      "M8 18c1.2 1 6.8 1 8 0",
+    ],
     home: [
       "M4 21V9l8-5 8 5v12",
       "M9 21v-7h6v7",
@@ -341,12 +389,27 @@ function icon(name) {
     energy: [
       "M13 2 4 14h7l-1 8 10-13h-7l1-7Z",
     ],
+    scissors: [
+      "M6 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
+      "M6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z",
+      "M8 7l12 10",
+      "M8 17 20 7",
+    ],
+    shield: [
+      "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z",
+      "m9.5 12 1.8 1.8L15 10",
+    ],
     paw: [
       "M8.5 10.5a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6Z",
       "M15.5 10.5a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6Z",
       "M6.8 15.1a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z",
       "M17.2 15.1a1.6 1.6 0 1 0 0-3.2 1.6 1.6 0 0 0 0 3.2Z",
       "M8.6 18.2c.8-2 6-2 6.8 0 .5 1.2-.4 2.3-1.8 1.8a5.4 5.4 0 0 0-3.2 0c-1.4.5-2.3-.6-1.8-1.8Z",
+    ],
+    worm: [
+      "M4 16c2.2-5 6.6-6.6 10.5-4.5 2.6 1.4 4.4.9 5.5-1.5",
+      "M6 18c2.2-4.1 5.7-5.2 8.8-3.4 2.2 1.3 4 .8 5.2-1.1",
+      "M7 13h.01",
     ],
   };
 
@@ -391,27 +454,49 @@ function formatEnergy(value) {
   return formatEnum(value);
 }
 
-function carePillGrid(animal, convivencia, { compact = false } = {}) {
-  const items = [
-    carePill("Castrado", animal.castrado === false ? "Nao" : "Sim", animal.castrado === false ? "neutral" : "success"),
-    carePill("Vacinado", animal.vacinado === false ? "Nao" : "Sim", animal.vacinado === false ? "neutral" : "success"),
-    carePill("Vermifugado", animal.vermifugado === false ? "Nao" : "Sim", animal.vermifugado === false ? "neutral" : "success"),
-    carePill("Energia", formatEnum(animal.nivelEnergia), "info"),
-    carePill("Caes", formatBoolean(convivencia.caes), convivencia.caes ? "success" : "neutral"),
-    carePill("Gatos", formatBoolean(convivencia.gatos), convivencia.gatos ? "success" : "neutral"),
-  ];
-
-  if (!compact) {
-    items.push(carePill("Ambiente", animal.precisaEspaco ? "Quintal" : "Apartamento", "info"));
+function formatStatus(value) {
+  const status = String(value || "").toLowerCase();
+  if (status === "disponivel") {
+    return "Dispon\u00edvel";
   }
+  if (status === "adotado") {
+    return "Adotado";
+  }
+  return formatEnum(value);
+}
+
+function carePillGrid(animal, convivencia) {
+  const items = [
+    carePill("Castrado", animal.castrado === false ? "Nao" : "Sim", animal.castrado === false ? "neutral" : "success", "scissors"),
+    carePill("Vacinado", animal.vacinado === false ? "Nao" : "Sim", animal.vacinado === false ? "neutral" : "success", "shield"),
+    carePill("Vermifugado", animal.vermifugado === false ? "Nao" : "Sim", animal.vermifugado === false ? "neutral" : "success", "worm"),
+    carePill("Energia", formatEnergy(animal.nivelEnergia), "info", "energy"),
+    carePill("C\u00e3es", formatBoolean(convivencia.caes), convivencia.caes ? "success" : "neutral", "dog"),
+    carePill("Gatos", formatBoolean(convivencia.gatos), convivencia.gatos ? "success" : "neutral", "cat"),
+  ];
 
   return element("div", { className: "care-pill-grid" }, items);
 }
 
-function carePill(label, value, tone = "neutral") {
+function carePill(label, value, tone = "neutral", iconName = "paw") {
   return element("div", { className: `care-pill care-pill-${tone}` }, [
-    element("span", { text: label }),
-    element("strong", { text: value }),
+    element("span", { className: "care-pill-icon", "aria-hidden": "true" }, [
+      icon(iconName),
+    ]),
+    element("span", { className: "care-pill-label", text: label }),
+    element("strong", { className: "care-pill-value", text: value }),
+  ]);
+}
+
+function environmentSummary(animal) {
+  return element("div", { className: "animal-environment" }, [
+    element("span", { className: "animal-environment-icon", "aria-hidden": "true" }, [
+      icon("building"),
+    ]),
+    element("div", {}, [
+      element("span", { text: "Ambiente ideal" }),
+      element("strong", { text: animal.precisaEspaco ? "Casa com quintal" : "Apartamento" }),
+    ]),
   ]);
 }
 
@@ -427,4 +512,12 @@ function getAnimalDisplayScore(animal) {
   const base = Number.isFinite(Number(animal?.id)) ? Number(animal.id) : String(animal?.nome || "").length;
   const score = 78 + ((base * 7) % 17);
   return Math.min(score, 94);
+}
+
+function normalizeScore(value) {
+  const score = Number(value);
+  if (!Number.isFinite(score)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(Math.round(score), 100));
 }

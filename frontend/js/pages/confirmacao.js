@@ -1,10 +1,16 @@
-import { readLastSolicitacao } from "../state.js";
+import { readAuthenticatedAdotanteId, readLastSolicitacao, requestLoginOnHome } from "../state.js";
 import { $, clearNode, element } from "../ui.js";
 
 const target = $("#confirmacao-detalhes");
-const solicitacao = readLastSolicitacao(sessionStorage);
+const adotanteId = readAuthenticatedAdotanteId();
+const solicitacao = adotanteId ? readLastSolicitacao(sessionStorage) : null;
 
-if (target) {
+if (!adotanteId) {
+  requestLoginOnHome();
+  if (globalThis.window?.location) {
+    globalThis.window.location.href = "index.html?login=required";
+  }
+} else if (target) {
   clearNode(target);
 
   if (solicitacao) {

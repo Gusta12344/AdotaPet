@@ -12,6 +12,7 @@ import com.adotapet.backend.model.Animal;
 import com.adotapet.backend.model.SolicitacaoAdocao;
 import com.adotapet.backend.model.StatusAnimal;
 import com.adotapet.backend.model.StatusSolicitacao;
+import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.queue.FilaManual;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
@@ -23,12 +24,15 @@ public class SolicitacaoAdocaoService {
     private final SolicitacaoAdocaoRepository solicitacaoRepository;
     private final AnimalRepository animalRepository;
     private final AdotanteRepository adotanteRepository;
+    private final NotificacaoService notificacaoService;
 
     public SolicitacaoAdocaoService(SolicitacaoAdocaoRepository solicitacaoRepository,
-            AnimalRepository animalRepository, AdotanteRepository adotanteRepository) {
+            AnimalRepository animalRepository, AdotanteRepository adotanteRepository,
+            NotificacaoService notificacaoService) {
         this.solicitacaoRepository = solicitacaoRepository;
         this.animalRepository = animalRepository;
         this.adotanteRepository = adotanteRepository;
+        this.notificacaoService = notificacaoService;
     }
 
     @Transactional
@@ -53,7 +57,11 @@ public class SolicitacaoAdocaoService {
 
         animal.setStatus(StatusAnimal.em_analise);
 
-        return SolicitacaoResponse.fromEntity(solicitacaoRepository.save(solicitacao));
+        SolicitacaoAdocao salva = solicitacaoRepository.save(solicitacao);
+        notificacaoService.criar(adotante, TipoNotificacao.adocao, "Solicitacao enviada",
+                "Sua solicitacao para adotar " + animal.getNome() + " foi enviada e esta em analise.",
+                "solicitacao_adocao", salva.getId());
+        return SolicitacaoResponse.fromEntity(salva);
     }
 
     @Transactional(readOnly = true)
@@ -64,6 +72,18 @@ public class SolicitacaoAdocaoService {
         }
 
         return fila.paraLista()
+                .stream()
+                .map(SolicitacaoResponse::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SolicitacaoResponse> listarPorAdotante(Integer adotanteId) {
+        if (!adotanteRepository.existsById(adotanteId)) {
+            throw new RecursoNaoEncontradoException("Adotante nao encontrado");
+        }
+
+        return solicitacaoRepository.findByAdotanteIdOrderByDataSolicitacaoDesc(adotanteId)
                 .stream()
                 .map(SolicitacaoResponse::fromEntity)
                 .toList();
@@ -96,10 +116,16 @@ public class SolicitacaoAdocaoService {
         Animal animal = solicitacao.getAnimal();
         solicitacao.setStatus(StatusSolicitacao.aprovada);
         animal.setStatus(StatusAnimal.adotado);
+        notificacaoService.criar(solicitacao.getAdotante(), TipoNotificacao.adocao, "Solicitacao aprovada",
+                "Sua solicitacao para adotar " + animal.getNome() + " foi aprovada.",
+                "solicitacao_adocao", solicitacao.getId());
 
         for (SolicitacaoAdocao outra : solicitacaoRepository.findByAnimalIdAndStatus(animal.getId(), StatusSolicitacao.pendente)) {
             if (!outra.getId().equals(solicitacao.getId())) {
                 outra.setStatus(StatusSolicitacao.recusada);
+                notificacaoService.criar(outra.getAdotante(), TipoNotificacao.adocao, "Solicitacao recusada",
+                        "Sua solicitacao para adotar " + animal.getNome() + " foi recusada.",
+                        "solicitacao_adocao", outra.getId());
             }
         }
     }
@@ -107,5 +133,8 @@ public class SolicitacaoAdocaoService {
     private void recusar(SolicitacaoAdocao solicitacao) {
         solicitacao.setStatus(StatusSolicitacao.recusada);
         solicitacao.getAnimal().setStatus(StatusAnimal.disponivel);
+        notificacaoService.criar(solicitacao.getAdotante(), TipoNotificacao.adocao, "Solicitacao recusada",
+                "Sua solicitacao para adotar " + solicitacao.getAnimal().getNome() + " foi recusada.",
+                "solicitacao_adocao", solicitacao.getId());
     }
 }

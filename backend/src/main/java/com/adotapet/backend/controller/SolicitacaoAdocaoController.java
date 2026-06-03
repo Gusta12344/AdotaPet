@@ -41,6 +41,11 @@ public class SolicitacaoAdocaoController {
         return solicitacaoService.listarFilaPendente();
     }
 
+    @GetMapping("/adotantes/{adotanteId}")
+    public List<SolicitacaoResponse> listarPorAdotante(@PathVariable Integer adotanteId) {
+        return solicitacaoService.listarPorAdotante(adotanteId);
+    }
+
     @PutMapping("/{id}")
     public SolicitacaoResponse atualizarStatus(@PathVariable Integer id,
             @Valid @RequestBody SolicitacaoStatusRequest request) {

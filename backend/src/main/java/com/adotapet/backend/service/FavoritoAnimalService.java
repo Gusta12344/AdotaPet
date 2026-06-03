@@ -9,6 +9,7 @@ import com.adotapet.backend.dto.AnimalResponse;
 import com.adotapet.backend.model.Adotante;
 import com.adotapet.backend.model.Animal;
 import com.adotapet.backend.model.FavoritoAnimal;
+import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
 import com.adotapet.backend.repository.FavoritoAnimalRepository;
@@ -19,12 +20,14 @@ public class FavoritoAnimalService {
     private final AdotanteRepository adotanteRepository;
     private final AnimalRepository animalRepository;
     private final FavoritoAnimalRepository favoritoAnimalRepository;
+    private final NotificacaoService notificacaoService;
 
     public FavoritoAnimalService(AdotanteRepository adotanteRepository, AnimalRepository animalRepository,
-            FavoritoAnimalRepository favoritoAnimalRepository) {
+            FavoritoAnimalRepository favoritoAnimalRepository, NotificacaoService notificacaoService) {
         this.adotanteRepository = adotanteRepository;
         this.animalRepository = animalRepository;
         this.favoritoAnimalRepository = favoritoAnimalRepository;
+        this.notificacaoService = notificacaoService;
     }
 
     @Transactional
@@ -34,6 +37,8 @@ public class FavoritoAnimalService {
 
         if (!favoritoAnimalRepository.existsByAdotanteIdAndAnimalId(adotanteId, animalId)) {
             favoritoAnimalRepository.save(new FavoritoAnimal(adotante, animal));
+            notificacaoService.criar(adotante, TipoNotificacao.favoritos, "Favoritos atualizados",
+                    animal.getNome() + " foi adicionado aos favoritos.", "animal", animal.getId());
         }
 
         return AnimalResponse.fromEntity(animal);
@@ -51,9 +56,12 @@ public class FavoritoAnimalService {
 
     @Transactional
     public void remover(Integer adotanteId, Integer animalId) {
-        validarAdotante(adotanteId);
+        Adotante adotante = buscarAdotante(adotanteId);
         if (favoritoAnimalRepository.existsByAdotanteIdAndAnimalId(adotanteId, animalId)) {
+            Animal animal = buscarAnimal(animalId);
             favoritoAnimalRepository.deleteByAdotanteIdAndAnimalId(adotanteId, animalId);
+            notificacaoService.criar(adotante, TipoNotificacao.favoritos, "Favoritos atualizados",
+                    animal.getNome() + " foi removido dos favoritos.", "animal", animal.getId());
         }
     }
 

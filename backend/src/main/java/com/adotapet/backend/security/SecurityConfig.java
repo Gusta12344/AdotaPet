@@ -35,6 +35,10 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/adotantes/*/favoritos/*", HttpMethod.POST.name()),
                         new AntPathRequestMatcher("/adotantes/*/favoritos/*", HttpMethod.DELETE.name()),
                         new AntPathRequestMatcher("/adocoes", HttpMethod.POST.name()),
+                        new AntPathRequestMatcher("/adocoes/adotantes/*", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/notificacoes/adotantes/*", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/notificacoes/adotantes/*/lidas", HttpMethod.PUT.name()),
+                        new AntPathRequestMatcher("/notificacoes/*/lida", HttpMethod.PUT.name()),
                         new AntPathRequestMatcher("/auth/login", HttpMethod.POST.name()),
                         new AntPathRequestMatcher("/admin/login", HttpMethod.POST.name()),
                         new AntPathRequestMatcher("/error")

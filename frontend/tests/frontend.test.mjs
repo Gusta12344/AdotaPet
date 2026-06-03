@@ -15,6 +15,7 @@ import {
   enhanceSelectDropdown,
 } from "../js/dropdowns.js";
 import {
+  createHeaderAuthController,
   formatCpfForLogin,
   getHeaderAuthViewState,
 } from "../js/header-auth.js";
@@ -25,17 +26,28 @@ import {
   clearAdminCredentials,
 } from "../js/auth.js";
 import {
+  readAdotanteId,
+  readAuthenticatedAdotanteId,
   clearCurrentUser,
+  consumeLoginOnHome,
   readCurrentUser,
+  requestLoginOnHome,
+  saveAdotanteId,
   saveCurrentUser,
 } from "../js/state.js";
 import {
   applyFavoriteButtonState,
   getFavoriteButtonState,
+  toggleFavorite,
 } from "../js/favorites.js";
 import {
   galleryUrls,
 } from "../js/animal-gallery.js";
+import {
+  adoptionStatusNotification,
+  createNotificationCenter,
+  showToast,
+} from "../js/notifications.js";
 import {
   formatAge,
   formatBoolean,
@@ -62,8 +74,8 @@ function formElementMock(entries, files = []) {
   };
 }
 
-function storageMock() {
-  const data = new Map();
+function storageMock(entries = {}) {
+  const data = new Map(Object.entries(entries));
   return {
     getItem(key) {
       return data.has(key) ? data.get(key) : null;
@@ -87,12 +99,14 @@ class TestElement {
     this.textContent = "";
     this.value = "";
     this.listeners = new Map();
+    this.hidden = false;
   }
 
   append(...children) {
     for (const child of children) {
       if (child && typeof child === "object") {
         child.parentNode = this;
+        child.parentElement = this;
       }
       this.children.push(child);
     }
@@ -102,17 +116,48 @@ class TestElement {
     for (const child of children.reverse()) {
       if (child && typeof child === "object") {
         child.parentNode = this;
+        child.parentElement = this;
       }
       this.children.unshift(child);
     }
   }
 
+  removeChild(child) {
+    this.children = this.children.filter((item) => item !== child);
+    if (child && typeof child === "object") {
+      child.parentNode = null;
+      child.parentElement = null;
+    }
+  }
+
+  remove() {
+    if (this.parentNode) {
+      this.parentNode.children = this.parentNode.children.filter((child) => child !== this);
+      this.parentNode = null;
+      this.parentElement = null;
+    }
+  }
+
+  get firstChild() {
+    return this.children[0] || null;
+  }
+
   setAttribute(name, value) {
     this.attributes[name] = String(value);
+    if (name === "hidden") {
+      this.hidden = true;
+    }
   }
 
   getAttribute(name) {
     return this.attributes[name] ?? null;
+  }
+
+  removeAttribute(name) {
+    delete this.attributes[name];
+    if (name === "hidden") {
+      this.hidden = false;
+    }
   }
 
   addEventListener(type, handler) {
@@ -138,11 +183,40 @@ class TestElement {
 }
 
 function documentMock() {
-  return {
+  const body = new TestElement("body");
+  const documentRef = {
+    body,
     createElement(tagName) {
-      return new TestElement(tagName);
+      const element = new TestElement(tagName);
+      element.ownerDocument = documentRef;
+      return element;
+    },
+    querySelector(selector) {
+      return findByClass(body, selector.startsWith(".") ? selector.slice(1) : selector);
     },
   };
+  body.ownerDocument = documentRef;
+  return documentRef;
+}
+
+function notificationRootMock() {
+  const root = documentMock();
+  const host = root.createElement("div");
+  const toggle = root.createElement("button");
+  const badge = root.createElement("span");
+  host.append(toggle);
+  root.body.append(host);
+  root.querySelector = (selector) => {
+    if (selector === "[data-notifications-toggle]") {
+      return toggle;
+    }
+    if (selector === "[data-notification-badge]") {
+      return badge;
+    }
+    return findByClass(root.body, selector.startsWith(".") ? selector.slice(1) : selector);
+  };
+  root.addEventListener = () => {};
+  return { root, host, toggle, badge };
 }
 
 function withDocumentMock(callback) {
@@ -474,20 +548,29 @@ test("renderAnimalCard presents recommendations as a professional match card", (
   assert.equal(findByClass(card, "animal-facts"), null);
 });
 
-test("renderAnimalCard keeps compact cards clean with chips and care pills", () => {
+test("renderAnimalCard renders compact home cards like the visual reference", () => {
   const card = withDocumentMock(() => renderAnimalCard({
     animal: animalCardFixture,
     compact: true,
   }));
   const text = textTree(card);
+  const score = findByClass(card, "score");
 
   assert.match(card.className, /animal-card-premium/);
   assert.match(card.className, /animal-card-compact/);
+  assert.match(card.className, /animal-card-home/);
   assert.match(text, /Nina/);
   assert.match(text, /Gato/);
   assert.match(text, /Pequeno/);
-  assert.ok(findByClass(card, "animal-card-chips"));
+  assert.ok(score);
+  assert.equal(score.children[0].tagName, "strong");
+  assert.ok(findByClass(card, "animal-size-tag"));
   assert.ok(findByClass(card, "care-pill-grid"));
+  assert.equal(findAllByClass(card, "care-pill").length, 6);
+  assert.equal(findAllByClass(card, "care-pill-icon").length, 6);
+  assert.ok(findByClass(card, "animal-environment"));
+  assert.ok(findByClass(card, "button-save-icon-only"));
+  assert.equal(findByClass(card, "animal-card-chips"), null);
   assert.equal(findByClass(card, "animal-facts"), null);
 });
 
@@ -578,6 +661,35 @@ test("current user session stores only display data for the home header", () => 
   assert.equal(readCurrentUser(storage), null);
 });
 
+test("authenticated adopter id requires a current adopter session", () => {
+  const sessionStorage = storageMock();
+  const localStorage = storageMock({ "adotapet.adotanteId": "42" });
+
+  assert.equal(readAuthenticatedAdotanteId({ sessionStorage, localStorage }), null);
+  assert.equal(readAdotanteId(localStorage), null);
+
+  saveCurrentUser(sessionStorage, {
+    id: 7,
+    nome: "Mariana Costa",
+    cpf: "777.777.777-77",
+    email: "mariana@email.com",
+    tipo: "adotante",
+  });
+  saveAdotanteId(localStorage, 42);
+
+  assert.equal(readAuthenticatedAdotanteId({ sessionStorage, localStorage }), 7);
+  assert.equal(readAdotanteId(localStorage), 7);
+});
+
+test("login-on-home flag is consumed once", () => {
+  const storage = storageMock();
+
+  requestLoginOnHome(storage);
+
+  assert.equal(consumeLoginOnHome(storage), true);
+  assert.equal(consumeLoginOnHome(storage), false);
+});
+
 test("header auth state hides private actions until the user signs in", () => {
   assert.deepEqual(getHeaderAuthViewState(null), {
     isLoggedIn: false,
@@ -603,11 +715,42 @@ test("header auth state hides private actions until the user signs in", () => {
     isLoggedIn: true,
     isAdmin: true,
     loginHidden: true,
-    privateActionsHidden: false,
+    privateActionsHidden: true,
     accountHidden: false,
     adminAreaHidden: false,
     greeting: "Administrador AdotaPet",
   });
+});
+
+test("header auth controller notifies pages when the user logs out", () => {
+  const storage = storageMock();
+  saveCurrentUser(storage, {
+    id: 4,
+    nome: "Mariana Costa",
+    cpf: "777.777.777-77",
+    email: "mariana@email.com",
+    tipo: "adotante",
+  });
+
+  const logoutButton = new TestElement("button");
+  const root = documentMock();
+  root.querySelector = (selector) => (selector === "[data-logout]" ? logoutButton : null);
+  root.querySelectorAll = () => [];
+  root.addEventListener = () => {};
+  let logoutNotified = false;
+
+  createHeaderAuthController({
+    root,
+    storage,
+    onLogout() {
+      logoutNotified = true;
+    },
+  });
+
+  logoutButton.click();
+
+  assert.equal(readCurrentUser(storage), null);
+  assert.equal(logoutNotified, true);
 });
 
 test("favorite button state marks favorited animals with a pressed red heart", () => {
@@ -624,6 +767,113 @@ test("favorite button state marks favorited animals with a pressed red heart", (
   assert.equal(button.className, "favorite-toggle favorite-toggle-active");
   assert.equal(button.getAttribute("aria-label"), "Remover Mimi dos favoritos");
   assert.equal(button.getAttribute("aria-pressed"), "true");
+});
+
+test("toggleFavorite refreshes persisted notifications after favorite changes", async () => {
+  const calls = [];
+  const favoriteIds = new Set();
+  const events = [];
+  const previousWindow = globalThis.window;
+  globalThis.window = {
+    dispatchEvent(event) {
+      events.push(event.type);
+    },
+  };
+  const apiClient = {
+    async post(path, body) {
+      calls.push({ method: "POST", path, body });
+      return {};
+    },
+  };
+
+  try {
+    const isFavorite = await toggleFavorite({ id: 3, nome: "Mimi" }, {
+      adotanteId: 7,
+      favoriteIds,
+      apiClient,
+    });
+
+    assert.equal(isFavorite, true);
+    assert.equal(calls[0].path, "/adotantes/7/favoritos/3");
+    assert.deepEqual(events, ["adotapet:notifications-changed"]);
+  } finally {
+    globalThis.window = previousWindow;
+  }
+});
+
+test("adoptionStatusNotification turns approved requests into bell notifications", () => {
+  const notification = adoptionStatusNotification({
+    id: 12,
+    animalNome: "Nina",
+    status: "aprovada",
+  });
+
+  assert.equal(notification.id, "adocao-12-aprovada");
+  assert.equal(notification.type, "success");
+  assert.match(notification.title, /aprovada/);
+  assert.match(notification.body, /Nina/);
+});
+
+test("showToast renders a dismissible notification toast", () => {
+  const previousDocument = globalThis.document;
+  const mock = documentMock();
+  globalThis.document = mock;
+
+  try {
+    const toast = showToast({
+      title: "Favoritos atualizados",
+      body: "Mimi foi adicionada aos favoritos.",
+      type: "success",
+      duration: 0,
+    });
+
+    assert.ok(findByClass(mock.body, "toast-region"));
+    assert.match(textTree(toast), /Favoritos atualizados/);
+    assert.match(textTree(toast), /Mimi foi adicionada aos favoritos/);
+    findByClass(toast, "toast-close").click();
+    assert.equal(findByClass(mock.body, "toast-notification"), null);
+  } finally {
+    globalThis.document = previousDocument;
+  }
+});
+
+test("notification center reads persisted notifications and marks them read in the API", async () => {
+  const { root, badge } = notificationRootMock();
+  const calls = [];
+  const previousSetInterval = globalThis.setInterval;
+  globalThis.setInterval = null;
+  const apiClient = {
+    async get(path) {
+      calls.push({ method: "GET", path });
+      return [{
+        id: 22,
+        titulo: "Solicitacao aprovada",
+        mensagem: "Sua solicitacao para adotar Nina foi aprovada.",
+        tipo: "adocao",
+        lida: false,
+        dataCriacao: "2026-06-03T10:00:00",
+      }];
+    },
+    async put(path, body) {
+      calls.push({ method: "PUT", path, body });
+      return [];
+    },
+  };
+
+  try {
+    const center = createNotificationCenter({ root, storage: storageMock(), apiClient });
+
+    await center.sync({ id: 7, nome: "Maria", tipo: "adotante" });
+    await center.openPanel();
+
+    assert.deepEqual(calls, [
+      { method: "GET", path: "/notificacoes/adotantes/7" },
+      { method: "PUT", path: "/notificacoes/adotantes/7/lidas", body: {} },
+    ]);
+    assert.equal(badge.hidden, true);
+  } finally {
+    globalThis.setInterval = previousSetInterval;
+  }
 });
 
 test("formatCpfForLogin masks CPF while the user types", () => {

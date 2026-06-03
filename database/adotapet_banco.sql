@@ -115,6 +115,23 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
 );
 
 -- ── Índices para performance ──────────────────────────────────
+CREATE TABLE IF NOT EXISTS notificacao (
+    id              INT          NOT NULL AUTO_INCREMENT,
+    adotante_id     INT          NOT NULL,
+    tipo            ENUM('favoritos', 'adocao', 'sistema') NOT NULL,
+    titulo          VARCHAR(120) NOT NULL,
+    mensagem        VARCHAR(500) NOT NULL,
+    lida            TINYINT(1)   NOT NULL DEFAULT 0,
+    data_criacao    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    referencia_tipo VARCHAR(60),
+    referencia_id   INT,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_notificacao_adotante FOREIGN KEY (adotante_id)
+        REFERENCES adotante (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS adotante_favorito (
     adotante_id    INT      NOT NULL,
     animal_id      INT      NOT NULL,
@@ -136,6 +153,7 @@ CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem);
 CREATE INDEX idx_favorito_animal ON adotante_favorito (animal_id);
 CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status);
 CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao);
+CREATE INDEX idx_notificacao_adotante_lida ON notificacao (adotante_id, lida, data_criacao);
 
 -- ============================================================
 --  DML — Dados de Exemplo
@@ -291,6 +309,11 @@ VALUES
     (2, 2, '2026-03-11 11:45:00', 'pendente'),  -- Carlos → Thor
     -- Solicitação já aprovada (Duque, para mostrar histórico)
     (9, 4, '2026-03-09 08:00:00', 'aprovada');  -- João → Duque (aprovada, daí em_analise)
+
+INSERT INTO notificacao (adotante_id, tipo, titulo, mensagem, lida, data_criacao, referencia_tipo, referencia_id)
+VALUES
+    (4, 'adocao', 'Solicitacao aprovada', 'Sua solicitacao para adotar Duque foi aprovada.', 0,
+     '2026-03-09 08:05:00', 'solicitacao_adocao', 5);
 
 -- ============================================================
 --  SELECTs de verificação (executar para validar o script)

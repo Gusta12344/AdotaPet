@@ -2,6 +2,7 @@ package com.adotapet.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,6 +26,7 @@ import com.adotapet.backend.model.Porte;
 import com.adotapet.backend.model.Protetor;
 import com.adotapet.backend.model.Sexo;
 import com.adotapet.backend.model.StatusAnimal;
+import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
 import com.adotapet.backend.repository.FavoritoAnimalRepository;
@@ -41,11 +43,15 @@ class FavoritoAnimalServiceTest {
     @Mock
     private FavoritoAnimalRepository favoritoAnimalRepository;
 
+    @Mock
+    private NotificacaoService notificacaoService;
+
     private FavoritoAnimalService favoritoAnimalService;
 
     @BeforeEach
     void setUp() {
-        favoritoAnimalService = new FavoritoAnimalService(adotanteRepository, animalRepository, favoritoAnimalRepository);
+        favoritoAnimalService = new FavoritoAnimalService(adotanteRepository, animalRepository, favoritoAnimalRepository,
+                notificacaoService);
     }
 
     @Test
@@ -63,6 +69,8 @@ class FavoritoAnimalServiceTest {
         assertEquals(3, response.id());
         assertEquals("Mimi", response.nome());
         verify(favoritoAnimalRepository).save(any(FavoritoAnimal.class));
+        verify(notificacaoService).criar(eq(adotante), eq(TipoNotificacao.favoritos),
+                eq("Favoritos atualizados"), eq("Mimi foi adicionado aos favoritos."), eq("animal"), eq(3));
     }
 
     @Test
@@ -78,6 +86,7 @@ class FavoritoAnimalServiceTest {
 
         assertEquals(3, response.id());
         verify(favoritoAnimalRepository, never()).save(any(FavoritoAnimal.class));
+        verify(notificacaoService, never()).criar(any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -97,12 +106,18 @@ class FavoritoAnimalServiceTest {
 
     @Test
     void removeFavoritoExistente() {
-        when(adotanteRepository.existsById(7)).thenReturn(true);
+        Adotante adotante = adotante(7);
+        Animal animal = animal(3);
+
+        when(adotanteRepository.findById(7)).thenReturn(Optional.of(adotante));
+        when(animalRepository.findById(3)).thenReturn(Optional.of(animal));
         when(favoritoAnimalRepository.existsByAdotanteIdAndAnimalId(7, 3)).thenReturn(true);
 
         favoritoAnimalService.remover(7, 3);
 
         verify(favoritoAnimalRepository).deleteByAdotanteIdAndAnimalId(7, 3);
+        verify(notificacaoService).criar(eq(adotante), eq(TipoNotificacao.favoritos),
+                eq("Favoritos atualizados"), eq("Mimi foi removido dos favoritos."), eq("animal"), eq(3));
     }
 
     private Adotante adotante(Integer id) {

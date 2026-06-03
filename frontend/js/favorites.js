@@ -1,4 +1,5 @@
 import { api } from "./api.js";
+import { emitNotificationsChanged, favoriteChangeNotification, showToast } from "./notifications.js";
 
 export function getFavoriteButtonState(animal, isFavorite, { baseClass = "favorite-toggle" } = {}) {
   const nome = String(animal?.nome || "animal").trim() || "animal";
@@ -38,7 +39,11 @@ export async function loadFavoriteIds(adotanteId, { apiClient = api } = {}) {
   return favoriteIdsFromAnimals(await apiClient.get(`/adotantes/${adotanteId}/favoritos`));
 }
 
-export async function toggleFavorite(animal, { adotanteId, favoriteIds, apiClient = api } = {}) {
+export async function toggleFavorite(animal, {
+  adotanteId,
+  favoriteIds,
+  apiClient = api,
+} = {}) {
   const animalId = Number(animal?.id);
   if (!Number.isInteger(animalId) || animalId <= 0) {
     throw new Error("Animal invalido para favoritos");
@@ -53,10 +58,17 @@ export async function toggleFavorite(animal, { adotanteId, favoriteIds, apiClien
   if (isFavorite) {
     await apiClient.delete(`/adotantes/${adotanteId}/favoritos/${animalId}`);
     favorites.delete(animalId);
+    notifyFavoriteChange(animal, false);
     return false;
   }
 
   await apiClient.post(`/adotantes/${adotanteId}/favoritos/${animalId}`, null);
   favorites.add(animalId);
+  notifyFavoriteChange(animal, true);
   return true;
+}
+
+function notifyFavoriteChange(animal, isFavorite) {
+  showToast(favoriteChangeNotification(animal, isFavorite));
+  emitNotificationsChanged();
 }

@@ -1,16 +1,18 @@
 import { api } from "./api.js";
 import { clearAdminCredentials, saveAdminCredentials } from "./auth.js";
+import { createNotificationCenter } from "./notifications.js";
 import { clearAdotanteId, clearCurrentUser, readCurrentUser, saveAdotanteId, saveCurrentUser } from "./state.js";
 
 export function getHeaderAuthViewState(user) {
   const isLoggedIn = Boolean(user?.nome);
   const isAdmin = user?.tipo === "admin";
+  const isAdotante = user?.tipo === "adotante";
 
   return {
     isLoggedIn,
     isAdmin,
     loginHidden: isLoggedIn,
-    privateActionsHidden: !isLoggedIn,
+    privateActionsHidden: !isAdotante,
     accountHidden: !isLoggedIn,
     adminAreaHidden: !isAdmin,
     greeting: isLoggedIn ? user.nome : "",
@@ -46,6 +48,7 @@ export function createHeaderAuthController({
   root = document,
   storage = globalThis.sessionStorage || createMemoryStorage(),
   onLogin = null,
+  onLogout = null,
 } = {}) {
   const loginButton = query(root, "[data-login-open]");
   const privateActions = queryAll(root, "[data-auth-private]");
@@ -63,6 +66,10 @@ export function createHeaderAuthController({
   const modalSubtitle = query(root, "[data-login-subtitle]");
   const modalSubmitText = query(root, "[data-login-submit-text]");
   const closeButtons = queryAll(root, "[data-login-close]");
+  const notificationCenter = createNotificationCenter({
+    root,
+    storage: globalThis.localStorage || createMemoryStorage(),
+  });
 
   function render() {
     const user = readCurrentUser(storage);
@@ -82,6 +89,8 @@ export function createHeaderAuthController({
     if (!state.isLoggedIn) {
       closeAccountMenu();
     }
+
+    void notificationCenter.sync(user);
 
     return state;
   }
@@ -197,10 +206,23 @@ export function createHeaderAuthController({
     clearAdotanteIdIfAvailable();
     closeAccountMenu();
     closeLoginModal();
+    notificationCenter.clear();
+    onLogout?.();
     render();
   }
 
+  function requireLoggedUser(event) {
+    if (readCurrentUser(storage)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    openLoginModal();
+  }
+
   loginButton?.addEventListener("click", () => openLoginModal());
+  privateActions.forEach((action) => action.addEventListener("click", requireLoggedUser));
   closeButtons.forEach((button) => button.addEventListener("click", closeLoginModal));
   loginForm?.addEventListener("submit", submitLogin);
   if (loginForm) {

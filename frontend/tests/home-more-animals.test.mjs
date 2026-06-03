@@ -78,6 +78,45 @@ function createDocumentMock(elements) {
   };
 }
 
+function storageMock(entries = {}) {
+  const data = new Map(Object.entries(entries));
+  return {
+    getItem(key) {
+      return data.has(key) ? data.get(key) : null;
+    },
+    setItem(key, value) {
+      data.set(key, String(value));
+    },
+    removeItem(key) {
+      data.delete(key);
+    },
+  };
+}
+
+function textTree(node) {
+  if (typeof node === "string") {
+    return node;
+  }
+  return `${node?.textContent || ""}${(node?.children || []).map(textTree).join("")}`;
+}
+
+function findByClass(node, className) {
+  if (!node || typeof node === "string") {
+    return null;
+  }
+  const classes = String(node.className || "").split(/\s+/);
+  if (classes.includes(className)) {
+    return node;
+  }
+  for (const child of node.children || []) {
+    const match = findByClass(child, className);
+    if (match) {
+      return match;
+    }
+  }
+  return null;
+}
+
 function animal(id) {
   return {
     id,
@@ -94,6 +133,47 @@ function animal(id) {
   };
 }
 
+function homeElements() {
+  const list = new TestElement("div");
+  const feedback = new TestElement("p");
+  const toolbar = new TestElement("form");
+  const search = new TestElement("input");
+  const statusFilter = new TestElement("select");
+  const speciesFilter = new TestElement("select");
+  const sizeFilter = new TestElement("select");
+  const ageFilter = new TestElement("select");
+  const moreButton = new TestElement("button");
+  const lessButton = new TestElement("button");
+  const endMessage = new TestElement("p");
+
+  return {
+    list,
+    feedback,
+    toolbar,
+    search,
+    statusFilter,
+    speciesFilter,
+    sizeFilter,
+    ageFilter,
+    moreButton,
+    lessButton,
+    endMessage,
+    elements: new Map([
+      ["#animais-preview", list],
+      ["#home-feedback", feedback],
+      [".animal-toolbar", toolbar],
+      ["#animal-search", search],
+      ["#animal-status-filter", statusFilter],
+      ["#animal-species-filter", speciesFilter],
+      ["#animal-size-filter", sizeFilter],
+      ["#animal-age-filter", ageFilter],
+      [".more-button", moreButton],
+      [".less-button", lessButton],
+      ["#animais-end-message", endMessage],
+    ]),
+  };
+}
+
 async function waitFor(condition) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     if (condition()) {
@@ -103,6 +183,74 @@ async function waitFor(condition) {
   }
   assert.ok(condition(), "condition should become true");
 }
+
+test("home page uses the recommendation score for the signed-in adopter", async () => {
+  const { list, feedback, elements } = homeElements();
+  const requestedUrls = [];
+  const previousSetInterval = globalThis.setInterval;
+
+  globalThis.document = createDocumentMock(elements);
+  globalThis.setInterval = null;
+  globalThis.sessionStorage = storageMock({
+    "adotapet.currentUser": JSON.stringify({
+      id: 42,
+      nome: "Mariana Costa",
+      cpf: "777.777.777-77",
+      email: "mariana@email.com",
+      tipo: "adotante",
+    }),
+  });
+  globalThis.localStorage = storageMock({ "adotapet.adotanteId": "42" });
+  globalThis.window = {
+    setTimeout(callback) {
+      return setTimeout(callback, 0);
+    },
+  };
+  globalThis.fetch = async (url) => {
+    requestedUrls.push(url);
+    if (url === "http://localhost:8080/animais") {
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify([animal(8)]);
+        },
+      };
+    }
+    if (url === "http://localhost:8080/animais/recomendados/42") {
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify([{ animal: animal(8), score: 60 }]);
+        },
+      };
+    }
+    if (url === "http://localhost:8080/adotantes/42/favoritos") {
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify([]);
+        },
+      };
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  try {
+    await import(`../js/pages/index.js?test=${Date.now()}-recommendation-score`);
+    await waitFor(() => list.children.length === 1);
+
+    assert.ok(requestedUrls.includes("http://localhost:8080/animais/recomendados/42"));
+    assert.match(textTree(findByClass(list.children[0], "score")), /60%/);
+    assert.doesNotMatch(textTree(findByClass(list.children[0], "score")), /83%/);
+  } finally {
+    globalThis.setInterval = previousSetInterval;
+    delete globalThis.sessionStorage;
+    delete globalThis.localStorage;
+  }
+});
 
 test("home page reveals more animals in batches and shows an end message", async () => {
   const list = new TestElement("div");
@@ -239,4 +387,43 @@ test("home page does not show login error when public animal list returns unauth
   await waitFor(() => feedback.textContent === "Nao foi possivel carregar a lista de animais. Essa lista e publica.");
 
   assert.notEqual(feedback.textContent, "CPF ou senha invalidos");
+});
+
+test("recommended page does not fetch or render animals without a signed-in adopter", async () => {
+  const list = new TestElement("div");
+  const feedback = new TestElement("p");
+  const elements = new Map([
+    ["#recomendados-list", list],
+    ["#recomendados-feedback", feedback],
+  ]);
+  let fetchCalled = false;
+
+  globalThis.document = createDocumentMock(elements);
+  globalThis.sessionStorage = storageMock();
+  globalThis.localStorage = storageMock();
+  globalThis.window = {
+    location: {
+      href: "recomendados.html",
+    },
+  };
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    throw new Error("Recommended animals should not be requested without login");
+  };
+
+  try {
+    await import(`../js/pages/recomendados.js?test=${Date.now()}-guest`);
+    await waitFor(() => globalThis.window.location.href === "index.html?login=required");
+
+    assert.equal(fetchCalled, false);
+    assert.equal(list.children.length, 0);
+    assert.equal(feedback.textContent, "");
+    assert.equal(globalThis.sessionStorage.getItem("adotapet.loginOnHome"), "1");
+  } finally {
+    delete globalThis.document;
+    delete globalThis.sessionStorage;
+    delete globalThis.localStorage;
+    delete globalThis.window;
+    delete globalThis.fetch;
+  }
 });

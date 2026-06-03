@@ -1,7 +1,7 @@
 import { api } from "../api.js";
 import { applyFavoriteButtonState, favoriteIdsFromAnimals, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
-import { readAdotanteId } from "../state.js";
+import { readAuthenticatedAdotanteId, requestLoginOnHome } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
 const list = $("#favoritos-list");
@@ -11,6 +11,7 @@ let favoritos = [];
 
 createHeaderAuthController({
   onLogin: loadFavoritos,
+  onLogout: redirectGuestToHomeLogin,
 });
 
 async function loadFavoritos() {
@@ -22,10 +23,7 @@ async function loadFavoritos() {
   clearNode(list);
 
   if (!adotanteId) {
-    favoritos = [];
-    favoriteIds = new Set();
-    list.append(element("p", { className: "empty-state", text: "Entre como adotante para ver seus favoritos." }));
-    setFeedback(feedback, "Perfil de adotante nao encontrado.", "error");
+    redirectGuestToHomeLogin();
     return;
   }
 
@@ -60,6 +58,11 @@ function renderFavoritos() {
 
 async function handleFavoriteToggle({ animal, button }) {
   const adotanteId = readCurrentAdotanteId();
+  if (!adotanteId) {
+    redirectGuestToHomeLogin();
+    return undefined;
+  }
+
   button.disabled = true;
 
   try {
@@ -78,7 +81,26 @@ async function handleFavoriteToggle({ animal, button }) {
 }
 
 function readCurrentAdotanteId() {
-  return globalThis.localStorage ? readAdotanteId(globalThis.localStorage) : null;
+  return readAuthenticatedAdotanteId();
+}
+
+function redirectGuestToHomeLogin() {
+  favoritos = [];
+  favoriteIds = new Set();
+  requestLoginOnHome();
+
+  if (globalThis.window?.location) {
+    globalThis.window.location.href = "index.html?login=required";
+    return;
+  }
+
+  if (!list) {
+    return;
+  }
+
+  clearNode(list);
+  list.append(element("p", { className: "empty-state", text: "Entre como adotante para ver seus favoritos." }));
+  setFeedback(feedback, "Entre como adotante para ver seus favoritos.", "error");
 }
 
 loadFavoritos();

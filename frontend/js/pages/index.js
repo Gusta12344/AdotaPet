@@ -2,7 +2,7 @@ import { api } from "../api.js";
 import { enhanceSelectDropdowns } from "../dropdowns.js";
 import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
-import { readAdotanteId } from "../state.js";
+import { consumeLoginOnHome, readAuthenticatedAdotanteId } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
 const list = $("#animais-preview");
@@ -23,15 +23,19 @@ const COLLAPSE_ANIMATION_MS = 260;
 let allAnimais = [];
 let visibleAnimalCount = INITIAL_VISIBLE_ANIMALS;
 let favoriteIds = new Set();
+let recommendationScores = new Map();
 
 enhanceSelectDropdowns(toolbar);
 const headerAuth = createHeaderAuthController({
   onLogin: () => {
-    syncFavoriteIds()
+    syncHomePersonalization()
       .then(renderAnimais)
       .catch((error) => setFeedback(feedback, error.message, "error"));
   },
 });
+if (shouldOpenLoginModalOnLoad()) {
+  headerAuth.openLoginModal();
+}
 
 async function loadAnimais() {
   if (!list) {
@@ -42,7 +46,7 @@ async function loadAnimais() {
 
   try {
     allAnimais = await api.get("/animais");
-    await syncFavoriteIds();
+    await syncHomePersonalization();
     resetPagination();
     renderAnimais();
     setFeedback(feedback, "");
@@ -114,6 +118,7 @@ function appendAnimalCards(animais, { reveal = false } = {}) {
     const card = renderAnimalCard({
       animal,
       compact: true,
+      score: recommendationScores.get(Number(animal.id)),
       isFavorite: favoriteIds.has(Number(animal.id)),
       onFavoriteToggle: handleFavoriteToggle,
     });
@@ -124,9 +129,35 @@ function appendAnimalCards(animais, { reveal = false } = {}) {
   }
 }
 
+async function syncHomePersonalization() {
+  await Promise.all([
+    syncFavoriteIds(),
+    syncRecommendationScores(),
+  ]);
+}
+
 async function syncFavoriteIds() {
   const adotanteId = readCurrentAdotanteId();
   favoriteIds = adotanteId ? await loadFavoriteIds(adotanteId) : new Set();
+}
+
+async function syncRecommendationScores() {
+  const adotanteId = readCurrentAdotanteId();
+  recommendationScores = new Map();
+
+  if (!adotanteId) {
+    return;
+  }
+
+  const recomendacoes = await api.get(`/animais/recomendados/${adotanteId}`);
+  for (const recomendacao of Array.isArray(recomendacoes) ? recomendacoes : []) {
+    const animalId = Number(recomendacao?.animal?.id);
+    const score = Number(recomendacao?.score);
+
+    if (Number.isInteger(animalId) && animalId > 0 && Number.isFinite(score)) {
+      recommendationScores.set(animalId, score);
+    }
+  }
 }
 
 async function handleFavoriteToggle({ animal, button }) {
@@ -152,7 +183,19 @@ async function handleFavoriteToggle({ animal, button }) {
 }
 
 function readCurrentAdotanteId() {
-  return globalThis.localStorage ? readAdotanteId(globalThis.localStorage) : null;
+  return readAuthenticatedAdotanteId();
+}
+
+function shouldOpenLoginModalOnLoad() {
+  const params = new URLSearchParams(globalThis.window?.location?.search || "");
+  const requestedByUrl = params.get("login") === "required";
+  const requestedBySession = consumeLoginOnHome();
+
+  if (requestedByUrl) {
+    globalThis.window?.history?.replaceState?.(null, "", "index.html");
+  }
+
+  return requestedByUrl || requestedBySession;
 }
 
 function collapseAnimalCardsFrom(startIndex) {

@@ -137,6 +137,40 @@ test("favorite navigation points to the favorites page", () => {
   assert.match(html, /class="favorite-button" href="favoritos\.html"/);
 });
 
+test("recommended navigation is hidden until the user is signed in", () => {
+  for (const page of ["index.html", "cadastro.html", "editar-dados.html", "favoritos.html", "recomendados.html", "animal.html"]) {
+    const html = readPage(page);
+    const navMatch = html.match(/<div class="nav-links">([\s\S]*?)<\/div>/);
+    const recommendedLink = navMatch?.[1].match(/<a[^>]+href="recomendados\.html"[^>]*>/)?.[0] || "";
+
+    assert.match(recommendedLink, /data-auth-private/, `${page} should make recommended navigation private`);
+    assert.match(recommendedLink, /hidden/, `${page} should hide recommended navigation before JS auth state`);
+  }
+});
+
+test("public top navigation does not expose recommended page links", () => {
+  for (const page of pages) {
+    const html = readPage(page);
+    const navMatch = html.match(/<div class="nav-links">([\s\S]*?)<\/div>/);
+    const recommendedLink = navMatch?.[1].match(/<a[^>]+href="recomendados\.html"[^>]*>/)?.[0];
+
+    if (!recommendedLink) {
+      continue;
+    }
+
+    assert.match(recommendedLink, /data-auth-private/, `${page} should not expose recommended navigation to guests`);
+    assert.match(recommendedLink, /hidden/, `${page} should hide recommended navigation before login`);
+  }
+});
+
+test("notification bell is wired for the shared notification controller", () => {
+  const html = readPage("index.html");
+
+  assert.match(html, /data-notifications-toggle/);
+  assert.match(html, /data-notification-badge hidden><\/span>/);
+  assert.doesNotMatch(html, /<span class="notification-badge">2<\/span>/);
+});
+
 test("animal detail controller renders the premium detail sections", () => {
   const script = fs.readFileSync(path.join(root, "js/pages/animal.js"), "utf8");
 

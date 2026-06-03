@@ -17,6 +17,9 @@ public interface SolicitacaoAdocaoRepository extends JpaRepository<SolicitacaoAd
     List<SolicitacaoAdocao> findAllByOrderByDataSolicitacaoAsc();
 
     @EntityGraph(attributePaths = {"animal", "adotante"})
+    List<SolicitacaoAdocao> findByAdotanteIdOrderByDataSolicitacaoDesc(Integer adotanteId);
+
+    @EntityGraph(attributePaths = {"animal", "adotante"})
     List<SolicitacaoAdocao> findByAnimalIdAndStatus(Integer animalId, StatusSolicitacao status);
 
     boolean existsByAnimalIdAndAdotanteIdAndStatus(Integer animalId, Integer adotanteId, StatusSolicitacao status);

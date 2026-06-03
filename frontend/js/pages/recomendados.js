@@ -1,7 +1,7 @@
 import { api } from "../api.js";
 import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
-import { readAdotanteId } from "../state.js";
+import { readAuthenticatedAdotanteId, requestLoginOnHome } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
 const list = $("#recomendados-list");
@@ -15,6 +15,9 @@ createHeaderAuthController({
       loadRecomendados();
     }
   },
+  onLogout() {
+    redirectGuestToHomeLogin();
+  },
 });
 
 async function loadRecomendados() {
@@ -23,9 +26,7 @@ async function loadRecomendados() {
   }
 
   if (!adotanteId) {
-    clearNode(list);
-    list.append(element("p", { className: "empty-state", text: "Cadastre seu perfil antes de ver recomendacoes." }));
-    setFeedback(feedback, "Perfil de adotante nao encontrado.", "error");
+    redirectGuestToHomeLogin();
     return;
   }
 
@@ -57,7 +58,26 @@ async function loadRecomendados() {
   }
 }
 
+function renderGuestState() {
+  if (!list) {
+    return;
+  }
+
+  clearNode(list);
+  list.append(element("p", {
+    className: "empty-state",
+    text: "Entre para ver recomendacoes personalizadas.",
+  }));
+  setFeedback(feedback, "Entre para ver suas recomendacoes.");
+}
+
 async function handleFavoriteToggle({ animal, button }) {
+  adotanteId = readCurrentAdotanteId();
+  if (!adotanteId) {
+    redirectGuestToHomeLogin();
+    return undefined;
+  }
+
   button.disabled = true;
   try {
     const isFavorite = await toggleFavorite(animal, { adotanteId, favoriteIds });
@@ -73,7 +93,20 @@ async function handleFavoriteToggle({ animal, button }) {
 }
 
 function readCurrentAdotanteId() {
-  return globalThis.localStorage ? readAdotanteId(globalThis.localStorage) : null;
+  return readAuthenticatedAdotanteId();
+}
+
+function redirectGuestToHomeLogin() {
+  adotanteId = null;
+  favoriteIds = new Set();
+  requestLoginOnHome();
+
+  if (globalThis.window?.location) {
+    globalThis.window.location.href = "index.html?login=required";
+    return;
+  }
+
+  renderGuestState();
 }
 
 loadRecomendados();
