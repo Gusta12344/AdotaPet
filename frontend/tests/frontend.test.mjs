@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  buildAdminUpdatePayload,
   buildAdotantePayload,
   buildAdotanteUpdatePayload,
   buildAnimalFormData,
@@ -19,6 +20,9 @@ import {
   formatCpfForLogin,
   getHeaderAuthViewState,
 } from "../js/header-auth.js";
+import {
+  renderSharedAuthShell,
+} from "../js/shared-auth-shell.js";
 import {
   buildBasicAuthHeader,
   readAdminCredentials,
@@ -95,6 +99,7 @@ class TestElement {
     this.children = [];
     this.attributes = {};
     this.className = "";
+    this.classList = createClassList(this);
     this.dataset = {};
     this.textContent = "";
     this.value = "";
@@ -142,11 +147,11 @@ class TestElement {
     return this.children[0] || null;
   }
 
-  setAttribute(name, value) {
-    this.attributes[name] = String(value);
-    if (name === "hidden") {
-      this.hidden = true;
-    }
+    setAttribute(name, value) {
+      this.attributes[name] = String(value);
+      if (name === "hidden") {
+        this.hidden = true;
+      }
   }
 
   getAttribute(name) {
@@ -191,8 +196,16 @@ function documentMock() {
       element.ownerDocument = documentRef;
       return element;
     },
+    createElementNS(_namespace, tagName) {
+      const element = new TestElement(tagName);
+      element.ownerDocument = documentRef;
+      return element;
+    },
     querySelector(selector) {
-      return findByClass(body, selector.startsWith(".") ? selector.slice(1) : selector);
+      return findBySelector(body, selector);
+    },
+    querySelectorAll(selector) {
+      return findAllBySelector(body, selector);
     },
   };
   body.ownerDocument = documentRef;
@@ -265,6 +278,84 @@ function findAllByClass(node, className, matches = []) {
     findAllByClass(child, className, matches);
   }
   return matches;
+}
+
+function createClassList(element) {
+  function classes() {
+    return new Set(String(element.className || "").split(/\s+/).filter(Boolean));
+  }
+
+  function write(nextClasses) {
+    element.className = Array.from(nextClasses).join(" ");
+  }
+
+  return {
+    contains(className) {
+      return classes().has(className);
+    },
+    add(...classNames) {
+      const nextClasses = classes();
+      for (const className of classNames) {
+        nextClasses.add(className);
+      }
+      write(nextClasses);
+    },
+    remove(...classNames) {
+      const nextClasses = classes();
+      for (const className of classNames) {
+        nextClasses.delete(className);
+      }
+      write(nextClasses);
+    },
+    toggle(className, force) {
+      const nextClasses = classes();
+      const shouldAdd = force ?? !nextClasses.has(className);
+      if (shouldAdd) {
+        nextClasses.add(className);
+      } else {
+        nextClasses.delete(className);
+      }
+      write(nextClasses);
+      return shouldAdd;
+    },
+  };
+}
+
+function findBySelector(node, selector) {
+  return findAllBySelector(node, selector)[0] || null;
+}
+
+function findAllBySelector(node, selector, matches = []) {
+  if (!node || typeof node === "string") {
+    return matches;
+  }
+
+  if (matchesSelector(node, selector)) {
+    matches.push(node);
+  }
+
+  for (const child of node.children || []) {
+    findAllBySelector(child, selector, matches);
+  }
+
+  return matches;
+}
+
+function matchesSelector(node, selector) {
+  if (selector.startsWith(".")) {
+    return String(node.className || "").split(/\s+/).includes(selector.slice(1));
+  }
+
+  const dataAttribute = /^\[([^=\]]+)(?:="([^"]*)")?\]$/.exec(selector);
+  if (dataAttribute) {
+    const [, name, expectedValue] = dataAttribute;
+    if (!Object.prototype.hasOwnProperty.call(node.attributes, name)) {
+      return false;
+    }
+    return expectedValue === undefined || node.attributes[name] === expectedValue;
+  }
+
+  return String(node.tagName || "").toLowerCase() === selector.toLowerCase();
 }
 
 const animalCardFixture = {
@@ -364,6 +455,34 @@ test("buildAdotanteUpdatePayload keeps profile edits within the API contract", (
     senhaAtual: "maria123",
     novaSenha: "nova123",
   });
+});
+
+test("buildAdminUpdatePayload keeps admin profile edits within the API contract", () => {
+  const payload = buildAdminUpdatePayload(formData([
+    ["nome", "  Gestor AdotaPet  "],
+    ["email", " GESTOR@ADOTAPET.COM "],
+    ["senhaAtual", " admin123 "],
+    ["novaSenha", " nova123 "],
+  ]));
+
+  assert.deepEqual(payload, {
+    nome: "Gestor AdotaPet",
+    email: "gestor@adotapet.com",
+    senhaAtual: "admin123",
+    novaSenha: "nova123",
+  });
+});
+
+test("buildAdminUpdatePayload rejects admin passwords outside the backend limit", () => {
+  assert.throws(
+    () => buildAdminUpdatePayload(formData([
+      ["nome", "Gestor AdotaPet"],
+      ["email", "gestor@adotapet.com"],
+      ["senhaAtual", "admin123"],
+      ["novaSenha", "a".repeat(73)],
+    ])),
+    /entre 6 e 72 caracteres/
+  );
 });
 
 test("buildAnimalPayload keeps admin-created animals within the API enum contract", () => {
@@ -753,6 +872,80 @@ test("header auth controller notifies pages when the user logs out", () => {
   assert.equal(logoutNotified, true);
 });
 
+test("header auth controller routes admins to the profile edit page", () => {
+  const storage = storageMock();
+  saveCurrentUser(storage, {
+    id: 1,
+    nome: "Administrador AdotaPet",
+    cpf: "000.000.000-00",
+    email: "admin@adotapet.com",
+    tipo: "admin",
+  });
+
+  const editProfileButton = new TestElement("button");
+  const root = documentMock();
+  root.querySelector = (selector) => (selector === "[data-edit-profile]" ? editProfileButton : null);
+  root.querySelectorAll = () => [];
+  root.addEventListener = () => {};
+  const previousWindow = globalThis.window;
+  globalThis.window = {
+    location: {
+      href: "admin-painel.html",
+    },
+  };
+
+  try {
+    createHeaderAuthController({ root, storage });
+    editProfileButton.click();
+
+    assert.equal(globalThis.window.location.href, "editar-dados.html");
+  } finally {
+    globalThis.window = previousWindow;
+  }
+});
+
+test("shared auth shell renders reusable header and login modal", () => {
+  const root = documentMock();
+  const mount = root.createElement("div");
+  mount.setAttribute("data-shared-auth-shell", "");
+  root.body.append(mount);
+
+  assert.equal(renderSharedAuthShell(root), true);
+  assert.ok(root.querySelector("[data-auth-header]"));
+  assert.ok(root.querySelector("[data-login-open]"));
+  assert.ok(root.querySelector("[data-account-menu]"));
+  assert.ok(root.querySelector("[data-login-modal]"));
+  assert.ok(root.querySelector("[data-site-footer]"));
+  assert.match(textTree(root.body), /Gustavo Maciel Huçulak/);
+  assert.match(textTree(root.body), /IFC Campus Fraiburgo/);
+  const githubLink = root.querySelector(".site-footer-github");
+  assert.equal(githubLink.getAttribute("href"), "https://github.com/Gusta12344");
+  assert.ok(findBySelector(githubLink, "svg"));
+  assert.equal(root.querySelectorAll("[data-login-close]").length, 2);
+});
+
+test("header auth controller mounts shared shell before wiring controls", () => {
+  const root = documentMock();
+  root.addEventListener = () => {};
+  const mount = root.createElement("div");
+  mount.setAttribute("data-shared-auth-shell", "");
+  root.body.append(mount);
+  const storage = storageMock();
+  saveCurrentUser(storage, {
+    id: 1,
+    nome: "Administrador AdotaPet",
+    cpf: "000.000.000-00",
+    email: "admin@adotapet.com",
+    tipo: "admin",
+  });
+
+  createHeaderAuthController({ root, storage });
+
+  assert.equal(root.querySelector("[data-account-greeting]").textContent, "Administrador AdotaPet");
+  assert.equal(root.querySelector("[data-login-open]").hidden, true);
+  assert.equal(root.querySelector("[data-admin-area]").hidden, false);
+});
+
 test("favorite button state marks favorited animals with a pressed red heart", () => {
   assert.deepEqual(getFavoriteButtonState({ nome: "Mimi" }, true), {
     className: "favorite-toggle favorite-toggle-active",
@@ -871,6 +1064,59 @@ test("notification center reads persisted notifications and marks them read in t
       { method: "PUT", path: "/notificacoes/adotantes/7/lidas", body: {} },
     ]);
     assert.equal(badge.hidden, true);
+  } finally {
+    globalThis.setInterval = previousSetInterval;
+  }
+});
+
+test("notification center clears notifications through the API", async () => {
+  const { root, badge } = notificationRootMock();
+  const calls = [];
+  const previousSetInterval = globalThis.setInterval;
+  globalThis.setInterval = null;
+  const apiNotification = {
+    id: 22,
+    titulo: "Solicitacao aprovada",
+    mensagem: "Sua solicitacao para adotar Nina foi aprovada.",
+    tipo: "adocao",
+    lida: false,
+    dataCriacao: "2026-06-03T10:00:00",
+  };
+  const apiClient = {
+    async get(path) {
+      calls.push({ method: "GET", path });
+      return [apiNotification];
+    },
+    async put(path, body) {
+      calls.push({ method: "PUT", path, body });
+      return [{ ...apiNotification, lida: true }];
+    },
+    async delete(path) {
+      calls.push({ method: "DELETE", path });
+      return null;
+    },
+  };
+
+  try {
+    const center = createNotificationCenter({ root, storage: storageMock(), apiClient });
+
+    await center.sync({ id: 7, nome: "Maria", tipo: "adotante" });
+    await center.openPanel();
+
+    const clearButton = findByClass(root.body, "notification-clear-button");
+    assert.ok(clearButton);
+    clearButton.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.deepEqual(calls, [
+      { method: "GET", path: "/notificacoes/adotantes/7" },
+      { method: "PUT", path: "/notificacoes/adotantes/7/lidas", body: {} },
+      { method: "DELETE", path: "/notificacoes/adotantes/7" },
+    ]);
+    assert.equal(badge.hidden, true);
+    assert.equal(findByClass(root.body, "notification-item"), null);
+    assert.match(textTree(root.body), /Nenhuma notificacao nova por enquanto/);
   } finally {
     globalThis.setInterval = previousSetInterval;
   }

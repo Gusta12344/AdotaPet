@@ -37,6 +37,7 @@ public class SecurityConfig {
                         new AntPathRequestMatcher("/adocoes", HttpMethod.POST.name()),
                         new AntPathRequestMatcher("/adocoes/adotantes/*", HttpMethod.GET.name()),
                         new AntPathRequestMatcher("/notificacoes/adotantes/*", HttpMethod.GET.name()),
+                        new AntPathRequestMatcher("/notificacoes/adotantes/*", HttpMethod.DELETE.name()),
                         new AntPathRequestMatcher("/notificacoes/adotantes/*/lidas", HttpMethod.PUT.name()),
                         new AntPathRequestMatcher("/notificacoes/*/lida", HttpMethod.PUT.name()),
                         new AntPathRequestMatcher("/auth/login", HttpMethod.POST.name()),
@@ -59,6 +60,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/animais").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/animais/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/adocoes").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/adocoes/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

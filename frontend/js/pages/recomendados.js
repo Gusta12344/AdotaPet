@@ -1,6 +1,6 @@
-import { api } from "../api.js";
 import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
+import { loadRecommendations } from "../recommendations.js";
 import { readAuthenticatedAdotanteId, requestLoginOnHome } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
@@ -33,7 +33,7 @@ async function loadRecomendados() {
   setFeedback(feedback, "Calculando compatibilidade...");
 
   try {
-    const recomendacoes = await api.get(`/animais/recomendados/${adotanteId}`);
+    const recomendacoes = await loadRecommendations(adotanteId);
     favoriteIds = await loadFavoriteIds(adotanteId);
     clearNode(list);
 

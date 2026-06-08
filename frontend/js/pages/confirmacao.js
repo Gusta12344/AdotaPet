@@ -1,5 +1,8 @@
+import { createHeaderAuthController } from "../header-auth.js";
 import { readAuthenticatedAdotanteId, readLastSolicitacao, requestLoginOnHome } from "../state.js";
 import { $, clearNode, element } from "../ui.js";
+
+createHeaderAuthController();
 
 const target = $("#confirmacao-detalhes");
 const adotanteId = readAuthenticatedAdotanteId();

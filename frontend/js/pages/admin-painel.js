@@ -1,7 +1,7 @@
 import { api } from "../api.js";
-import { clearAdminCredentials, readAdminCredentials } from "../auth.js";
+import { readAdminCredentials } from "../auth.js";
 import { buildAnimalFormData, buildSolicitacaoStatusPayload } from "../forms.js";
-import { clearCurrentUser } from "../state.js";
+import { createHeaderAuthController } from "../header-auth.js";
 import { $, clearNode, element, formatEnum, setFeedback } from "../ui.js";
 
 const credentials = readAdminCredentials(sessionStorage);
@@ -9,17 +9,16 @@ const animalForm = $("#animal-form");
 const animalFeedback = $("#animal-feedback");
 const filaFeedback = $("#fila-feedback");
 const filaList = $("#fila-list");
-const logout = $("#admin-logout");
+
+createHeaderAuthController({
+  onLogout() {
+    window.location.href = "index.html";
+  },
+});
 
 if (!credentials) {
   window.location.href = "index.html";
 }
-
-logout?.addEventListener("click", () => {
-  clearAdminCredentials(sessionStorage);
-  clearCurrentUser(sessionStorage);
-  window.location.href = "index.html";
-});
 
 animalForm?.addEventListener("submit", async (event) => {
   event.preventDefault();

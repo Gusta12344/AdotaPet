@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { clearAdminCredentials, saveAdminCredentials } from "./auth.js";
 import { createNotificationCenter } from "./notifications.js";
+import { renderSharedAuthShell } from "./shared-auth-shell.js";
 import { clearAdotanteId, clearCurrentUser, readCurrentUser, saveAdotanteId, saveCurrentUser } from "./state.js";
 
 export function getHeaderAuthViewState(user) {
@@ -50,6 +51,8 @@ export function createHeaderAuthController({
   onLogin = null,
   onLogout = null,
 } = {}) {
+  renderSharedAuthShell(root);
+
   const loginButton = query(root, "[data-login-open]");
   const privateActions = queryAll(root, "[data-auth-private]");
   const accountMenu = query(root, "[data-account-menu]");
@@ -237,8 +240,7 @@ export function createHeaderAuthController({
   accountDropdown?.addEventListener("click", (event) => event.stopPropagation());
   editProfileButton?.addEventListener("click", () => {
     closeAccountMenu();
-    const currentUser = readCurrentUser(storage);
-    window.location.href = currentUser?.tipo === "admin" ? "admin-painel.html" : "editar-dados.html";
+    window.location.href = "editar-dados.html";
   });
   logoutButton?.addEventListener("click", logout);
   root.addEventListener?.("click", closeAccountMenu);

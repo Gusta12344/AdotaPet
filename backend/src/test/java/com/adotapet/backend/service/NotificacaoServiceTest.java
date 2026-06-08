@@ -2,6 +2,7 @@ package com.adotapet.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
@@ -69,6 +70,15 @@ class NotificacaoServiceTest {
 
         assertTrue(aprovada.isLida());
         assertTrue(notificacoes.get(0).lida());
+    }
+
+    @Test
+    void limpaTodasAsNotificacoesDoAdotante() {
+        when(adotanteRepository.existsById(7)).thenReturn(true);
+
+        notificacaoService.limparPorAdotante(7);
+
+        verify(notificacaoRepository).deleteByAdotanteId(7);
     }
 
     private Adotante adotante(Integer id) {

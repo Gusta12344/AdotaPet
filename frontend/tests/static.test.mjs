@@ -15,13 +15,24 @@ const pages = [
   "admin.html",
   "admin-painel.html",
 ];
+const authShellPages = [
+  "index.html",
+  "cadastro.html",
+  "editar-dados.html",
+  "favoritos.html",
+  "recomendados.html",
+  "animal.html",
+  "confirmacao.html",
+  "admin.html",
+  "admin-painel.html",
+];
 
 function readPage(page) {
   return fs.readFileSync(path.join(root, page), "utf8");
 }
 
-function normalizedHeader(page) {
-  return readPage(page).match(/<header class="site-header">[\s\S]*?<\/header>/)?.[0].replace(/\r\n/g, "\n");
+function sharedAuthShellScript() {
+  return fs.readFileSync(path.join(root, "js/shared-auth-shell.js"), "utf8");
 }
 
 function localRefs(html) {
@@ -68,57 +79,51 @@ test("each page loads the shared stylesheet and one page controller", () => {
 });
 
 test("login modal links users without an account to the registration page", () => {
-  const html = readPage("index.html");
+  const script = sharedAuthShellScript();
 
-  assert.match(html, /Não possui uma conta\?/);
-  assert.match(html, /href="cadastro\.html"[^>]*>Cadastre-se aqui<\/a>/);
+  assert.match(script, /Nao possui uma conta\?/);
+  assert.match(script, /href: "cadastro\.html"/);
+  assert.match(script, /Cadastre-se aqui/);
 });
 
 test("profile edit page keeps authenticated account controls in the header", () => {
   const html = readPage("editar-dados.html");
 
-  assert.match(html, /data-auth-header/);
-  assert.match(html, /data-auth-private/);
-  assert.match(html, /data-account-menu/);
-  assert.match(html, /data-account-greeting/);
+  assert.match(html, /data-shared-auth-shell/);
+  assert.doesNotMatch(html, /<header class="site-header">/);
+  assert.doesNotMatch(html, /data-login-modal/);
   assert.match(html, /id="editar-dados-form"/);
 });
 
-test("animal detail page uses the authenticated header and login modal", () => {
-  const html = readPage("animal.html");
+test("shared pages mount the shared auth shell instead of duplicating header and modal", () => {
+  for (const page of authShellPages) {
+    const html = readPage(page);
 
-  assert.match(html, /data-auth-header/);
-  assert.match(html, /data-auth-private/);
-  assert.match(html, /data-account-menu/);
-  assert.match(html, /data-login-modal/);
+    assert.match(html, /data-shared-auth-shell/, `${page} should mount shared auth shell`);
+    assert.doesNotMatch(html, /<header class="site-header">/, `${page} should not duplicate header markup`);
+    assert.doesNotMatch(html, /data-login-modal/, `${page} should not duplicate modal markup`);
+  }
 });
 
-test("registration, recommended, animal detail and favorites pages keep the same header as the home page", () => {
-  const indexHeader = normalizedHeader("index.html");
+test("shared auth shell owns the reusable footer content", () => {
+  const script = sharedAuthShellScript();
 
-  assert.ok(indexHeader, "index header should exist");
-  assert.equal(normalizedHeader("cadastro.html"), indexHeader);
-  assert.equal(normalizedHeader("recomendados.html"), indexHeader);
-  assert.equal(normalizedHeader("animal.html"), indexHeader);
-  assert.equal(normalizedHeader("favoritos.html"), indexHeader);
+  assert.match(script, /site-footer/);
+  assert.match(script, /Gustavo Maciel Huçulak/);
+  assert.match(script, /IFC Campus Fraiburgo/);
+  assert.match(script, /https:\/\/github\.com\/Gusta12344/);
+  assert.match(script, /github/i);
 });
 
-test("recommended page uses the authenticated header and login modal", () => {
-  const html = readPage("recomendados.html");
+test("shared auth shell keeps reusable account and login controls in one module", () => {
+  const script = sharedAuthShellScript();
 
-  assert.match(html, /data-auth-header/);
-  assert.match(html, /data-auth-private/);
-  assert.match(html, /data-account-menu/);
-  assert.match(html, /data-login-modal/);
-});
-
-test("registration page uses the authenticated header and login modal", () => {
-  const html = readPage("cadastro.html");
-
-  assert.match(html, /data-auth-header/);
-  assert.match(html, /data-auth-private/);
-  assert.match(html, /data-account-menu/);
-  assert.match(html, /data-login-modal/);
+  assert.match(script, /data-auth-header/);
+  assert.match(script, /data-auth-private/);
+  assert.match(script, /data-account-menu/);
+  assert.match(script, /data-account-greeting/);
+  assert.match(script, /data-login-modal/);
+  assert.match(script, /data-edit-profile/);
 });
 
 test("admin animal form accepts multiple uploaded images", () => {
@@ -131,21 +136,34 @@ test("admin animal form accepts multiple uploaded images", () => {
   assert.match(inputMatch[0], /multiple/);
 });
 
-test("favorite navigation points to the favorites page", () => {
-  const html = readPage("index.html");
+test("admin panel uses the authenticated shared header and login modal", () => {
+  const html = readPage("admin-painel.html");
 
-  assert.match(html, /class="favorite-button" href="favoritos\.html"/);
+  assert.match(html, /data-shared-auth-shell/);
+  assert.doesNotMatch(html, /<header class="site-header">/);
+  assert.doesNotMatch(html, /data-login-modal/);
+  assert.doesNotMatch(html, /id="admin-logout"/);
+});
+
+test("hidden profile sections stay hidden even when component classes define display", () => {
+  const css = fs.readFileSync(path.join(root, "css/styles.css"), "utf8");
+
+  assert.match(css, /\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/);
+});
+
+test("favorite navigation points to the favorites page", () => {
+  const script = sharedAuthShellScript();
+
+  assert.match(script, /className: "favorite-button"/);
+  assert.match(script, /href: "favoritos\.html"/);
 });
 
 test("recommended navigation is hidden until the user is signed in", () => {
-  for (const page of ["index.html", "cadastro.html", "editar-dados.html", "favoritos.html", "recomendados.html", "animal.html"]) {
-    const html = readPage(page);
-    const navMatch = html.match(/<div class="nav-links">([\s\S]*?)<\/div>/);
-    const recommendedLink = navMatch?.[1].match(/<a[^>]+href="recomendados\.html"[^>]*>/)?.[0] || "";
+  const script = sharedAuthShellScript();
 
-    assert.match(recommendedLink, /data-auth-private/, `${page} should make recommended navigation private`);
-    assert.match(recommendedLink, /hidden/, `${page} should hide recommended navigation before JS auth state`);
-  }
+  assert.match(script, /href: "recomendados\.html"/);
+  assert.match(script, /"data-auth-private": ""/);
+  assert.match(script, /hidden: ""/);
 });
 
 test("public top navigation does not expose recommended page links", () => {
@@ -164,11 +182,11 @@ test("public top navigation does not expose recommended page links", () => {
 });
 
 test("notification bell is wired for the shared notification controller", () => {
-  const html = readPage("index.html");
+  const script = sharedAuthShellScript();
 
-  assert.match(html, /data-notifications-toggle/);
-  assert.match(html, /data-notification-badge hidden><\/span>/);
-  assert.doesNotMatch(html, /<span class="notification-badge">2<\/span>/);
+  assert.match(script, /data-notifications-toggle/);
+  assert.match(script, /data-notification-badge/);
+  assert.doesNotMatch(script, /notification-badge">2/);
 });
 
 test("animal detail controller renders the premium detail sections", () => {

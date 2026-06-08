@@ -188,6 +188,7 @@ export function createNotificationCenter({
   let currentNotifications = [];
   let hasSynced = false;
   let pollId = null;
+  let isClearing = false;
 
   if (panel && host) {
     host.append(panel);
@@ -232,18 +233,42 @@ export function createNotificationCenter({
 
     const unreadCount = currentNotifications.filter((notification) => !notification.read).length;
     renderBadge(badge, unreadCount);
-    renderPanel(panel, currentNotifications);
+    renderPanel(panel, currentNotifications, {
+      isClearing,
+      onClear: clearAllNotifications,
+    });
   }
 
   function clear() {
     currentNotifications = [];
     hasSynced = false;
+    isClearing = false;
     renderBadge(badge, 0);
     if (panel) {
       panel.hidden = true;
       renderPanel(panel, []);
     }
     toggle?.setAttribute("aria-expanded", "false");
+  }
+
+  async function clearAllNotifications() {
+    if (!currentAdotanteId || isClearing) {
+      return;
+    }
+
+    isClearing = true;
+    render();
+
+    try {
+      await apiClient.delete(`/notificacoes/adotantes/${currentAdotanteId}`);
+    } catch {
+      // A limpeza local mantém a interface coerente mesmo sem resposta da API.
+    } finally {
+      writeNotifications(storage, currentAdotanteId, []);
+      currentNotifications = [];
+      isClearing = false;
+      render();
+    }
   }
 
   async function openPanel() {
@@ -316,6 +341,7 @@ export function createNotificationCenter({
     sync,
     render,
     clear,
+    clearAllNotifications,
     openPanel,
     closePanel,
   };
@@ -465,7 +491,7 @@ function renderBadge(badge, count) {
   badge.hidden = false;
 }
 
-function renderPanel(panel, notifications) {
+function renderPanel(panel, notifications, { isClearing = false, onClear = null } = {}) {
   if (!panel) {
     return;
   }
@@ -474,8 +500,23 @@ function renderPanel(panel, notifications) {
   const documentRef = panel.ownerDocument || globalThis.document;
   const header = documentRef.createElement("div");
   header.className = "notification-panel-header";
-  header.append(textElement(documentRef, "strong", "Notificacoes"));
-  header.append(textElement(documentRef, "span", notifications.length ? `${notifications.length} recentes` : "Tudo em dia"));
+  const title = documentRef.createElement("div");
+  title.className = "notification-panel-title";
+  title.append(textElement(documentRef, "strong", "Notificacoes"));
+  title.append(textElement(documentRef, "span", notifications.length ? `${notifications.length} recentes` : "Tudo em dia"));
+  header.append(title);
+
+  if (notifications.length && typeof onClear === "function") {
+    const clearButton = documentRef.createElement("button");
+    clearButton.className = "notification-clear-button";
+    clearButton.type = "button";
+    clearButton.textContent = isClearing ? "Limpando..." : "Limpar";
+    clearButton.disabled = isClearing;
+    clearButton.setAttribute("aria-label", "Limpar notificacoes");
+    clearButton.addEventListener("click", onClear);
+    header.append(clearButton);
+  }
+
   panel.append(header);
 
   if (!notifications.length) {

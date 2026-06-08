@@ -252,6 +252,74 @@ test("home page uses the recommendation score for the signed-in adopter", async 
   }
 });
 
+test("favorites page uses recommendation scores and match cards for favorited animals", async () => {
+  const list = new TestElement("div");
+  const feedback = new TestElement("p");
+  const requestedUrls = [];
+  const previousSetInterval = globalThis.setInterval;
+  const elements = new Map([
+    ["#favoritos-list", list],
+    ["#favoritos-feedback", feedback],
+  ]);
+
+  globalThis.document = createDocumentMock(elements);
+  globalThis.setInterval = null;
+  globalThis.sessionStorage = storageMock({
+    "adotapet.currentUser": JSON.stringify({
+      id: 42,
+      nome: "Mariana Costa",
+      cpf: "777.777.777-77",
+      email: "mariana@email.com",
+      tipo: "adotante",
+    }),
+  });
+  globalThis.localStorage = storageMock({ "adotapet.adotanteId": "42" });
+  globalThis.window = {
+    location: {
+      href: "favoritos.html",
+    },
+  };
+  globalThis.fetch = async (url) => {
+    requestedUrls.push(url);
+    if (url === "http://localhost:8080/adotantes/42/favoritos") {
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify([animal(8)]);
+        },
+      };
+    }
+    if (url === "http://localhost:8080/animais/recomendados/42") {
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify([{ animal: animal(8), score: 60 }]);
+        },
+      };
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+
+  try {
+    await import(`../js/pages/favoritos.js?test=${Date.now()}-recommendation-score`);
+    await waitFor(() => list.children.length === 1);
+
+    assert.ok(requestedUrls.includes("http://localhost:8080/animais/recomendados/42"));
+    assert.match(list.children[0].className, /animal-card-match/);
+    assert.match(textTree(list.children[0]), /60%/);
+    assert.doesNotMatch(textTree(list.children[0]), /83%/);
+  } finally {
+    globalThis.setInterval = previousSetInterval;
+    delete globalThis.document;
+    delete globalThis.sessionStorage;
+    delete globalThis.localStorage;
+    delete globalThis.window;
+    delete globalThis.fetch;
+  }
+});
+
 test("home page reveals more animals in batches and shows an end message", async () => {
   const list = new TestElement("div");
   const feedback = new TestElement("p");

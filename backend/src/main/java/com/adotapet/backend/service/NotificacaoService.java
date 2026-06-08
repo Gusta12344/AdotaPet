@@ -55,6 +55,12 @@ public class NotificacaoService {
     }
 
     @Transactional
+    public void limparPorAdotante(Integer adotanteId) {
+        validarAdotante(adotanteId);
+        notificacaoRepository.deleteByAdotanteId(adotanteId);
+    }
+
+    @Transactional
     public NotificacaoResponse marcarComoLida(Integer id) {
         Notificacao notificacao = notificacaoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Notificacao nao encontrada"));

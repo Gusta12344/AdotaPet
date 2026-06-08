@@ -129,8 +129,28 @@ export function buildAdotanteUpdatePayload(data) {
     throw new Error(`Campos obrigatorios: ${missing.join(", ")}`);
   }
 
-  if (payload.novaSenha && payload.novaSenha.length < 6) {
-    throw new Error("A nova senha deve ter pelo menos 6 caracteres");
+  if (payload.novaSenha && (payload.novaSenha.length < 6 || payload.novaSenha.length > 72)) {
+    throw new Error("A nova senha deve ter entre 6 e 72 caracteres");
+  }
+
+  return payload;
+}
+
+export function buildAdminUpdatePayload(data) {
+  const payload = {
+    nome: readValue(data, "nome"),
+    email: readValue(data, "email").toLowerCase(),
+    senhaAtual: readValue(data, "senhaAtual"),
+    novaSenha: readValue(data, "novaSenha"),
+  };
+
+  const missing = validateRequiredFields(payload, ["nome", "email", "senhaAtual"]);
+  if (missing.length > 0) {
+    throw new Error(`Campos obrigatorios: ${missing.join(", ")}`);
+  }
+
+  if (payload.novaSenha && (payload.novaSenha.length < 6 || payload.novaSenha.length > 72)) {
+    throw new Error("A nova senha deve ter entre 6 e 72 caracteres");
   }
 
   return payload;

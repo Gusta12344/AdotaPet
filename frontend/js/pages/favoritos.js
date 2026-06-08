@@ -1,6 +1,7 @@
 import { api } from "../api.js";
 import { applyFavoriteButtonState, favoriteIdsFromAnimals, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
+import { loadRecommendationScores } from "../recommendations.js";
 import { readAuthenticatedAdotanteId, requestLoginOnHome } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
@@ -8,6 +9,7 @@ const list = $("#favoritos-list");
 const feedback = $("#favoritos-feedback");
 let favoriteIds = new Set();
 let favoritos = [];
+let recommendationScores = new Map();
 
 createHeaderAuthController({
   onLogin: loadFavoritos,
@@ -30,7 +32,12 @@ async function loadFavoritos() {
   setFeedback(feedback, "Carregando favoritos...");
 
   try {
-    favoritos = await api.get(`/adotantes/${adotanteId}/favoritos`);
+    const [nextFavoritos, nextRecommendationScores] = await Promise.all([
+      api.get(`/adotantes/${adotanteId}/favoritos`),
+      loadRecommendationScores(adotanteId),
+    ]);
+    favoritos = Array.isArray(nextFavoritos) ? nextFavoritos : [];
+    recommendationScores = nextRecommendationScores;
     favoriteIds = favoriteIdsFromAnimals(favoritos);
     renderFavoritos();
     setFeedback(feedback, "");
@@ -50,6 +57,7 @@ function renderFavoritos() {
   for (const animal of favoritos) {
     list.append(renderAnimalCard({
       animal,
+      score: recommendationScores.get(Number(animal.id)),
       isFavorite: favoriteIds.has(Number(animal.id)),
       onFavoriteToggle: handleFavoriteToggle,
     }));
@@ -87,6 +95,7 @@ function readCurrentAdotanteId() {
 function redirectGuestToHomeLogin() {
   favoritos = [];
   favoriteIds = new Set();
+  recommendationScores = new Map();
   requestLoginOnHome();
 
   if (globalThis.window?.location) {

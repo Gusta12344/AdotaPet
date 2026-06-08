@@ -2,6 +2,7 @@ import { api } from "../api.js";
 import { enhanceSelectDropdowns } from "../dropdowns.js";
 import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
+import { loadRecommendationScores } from "../recommendations.js";
 import { consumeLoginOnHome, readAuthenticatedAdotanteId } from "../state.js";
 import { $, clearNode, element, renderAnimalCard, setFeedback } from "../ui.js";
 
@@ -143,21 +144,7 @@ async function syncFavoriteIds() {
 
 async function syncRecommendationScores() {
   const adotanteId = readCurrentAdotanteId();
-  recommendationScores = new Map();
-
-  if (!adotanteId) {
-    return;
-  }
-
-  const recomendacoes = await api.get(`/animais/recomendados/${adotanteId}`);
-  for (const recomendacao of Array.isArray(recomendacoes) ? recomendacoes : []) {
-    const animalId = Number(recomendacao?.animal?.id);
-    const score = Number(recomendacao?.score);
-
-    if (Number.isInteger(animalId) && animalId > 0 && Number.isFinite(score)) {
-      recommendationScores.set(animalId, score);
-    }
-  }
+  recommendationScores = await loadRecommendationScores(adotanteId);
 }
 
 async function handleFavoriteToggle({ animal, button }) {

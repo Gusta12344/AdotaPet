@@ -8,76 +8,7 @@
     <link rel="stylesheet" href="css/styles.css">
   </head>
   <body>
-    <header class="site-header">
-      <nav class="nav" aria-label="Principal">
-        <a class="brand" href="index.html">
-          <img src="assets/adotapet-mark.svg" alt="">
-          <span class="brand-text">Adota<span>Pet</span></span>
-        </a>
-        <div class="nav-links">
-          <a href="recomendados.html" data-auth-private hidden>Recomendados</a>
-        </div>
-        <div class="nav-actions" aria-label="Acoes rapidas" data-auth-header>
-          <button class="icon-button has-badge" type="button" aria-label="Notificacoes" aria-haspopup="dialog" aria-expanded="false" data-notifications-toggle data-auth-private hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15 17H9a4 4 0 0 0 6 0Z"/>
-              <path d="M18 14v-3a6 6 0 1 0-12 0v3l-2 2h16l-2-2Z"/>
-            </svg>
-            <span class="notification-badge" data-notification-badge hidden></span>
-          </button>
-          <a class="favorite-button" href="favoritos.html" data-auth-private hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/>
-            </svg>
-            Favoritos
-          </a>
-          <button class="login-button" type="button" data-login-open>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"/>
-              <path d="M4 21a8 8 0 0 1 16 0"/>
-            </svg>
-            Fazer login
-          </button>
-          <div class="account-menu" data-account-menu hidden>
-            <button class="profile-chip" type="button" aria-label="Abrir menu da conta" aria-haspopup="menu" aria-expanded="false" data-account-trigger>
-              <span class="profile-avatar" aria-hidden="true"></span>
-              <span data-account-greeting></span>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m7 10 5 5 5-5"/>
-              </svg>
-            </button>
-            <div class="account-dropdown" role="menu" data-account-dropdown>
-              <a href="admin-painel.html" role="menuitem" data-admin-area hidden>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M3 21h18"/>
-                  <path d="M5 21V7l8-4v18"/>
-                  <path d="M19 21V11l-6-4"/>
-                  <path d="M9 9h1"/>
-                  <path d="M9 13h1"/>
-                  <path d="M9 17h1"/>
-                </svg>
-                Area administrativa
-              </a>
-              <button type="button" role="menuitem" data-edit-profile>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/>
-                </svg>
-                Editar dados pessoais
-              </button>
-              <button type="button" role="menuitem" data-logout>
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                  <path d="M16 17l5-5-5-5"/>
-                  <path d="M21 12H9"/>
-                </svg>
-                Sair
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-    </header>
+    <div data-shared-auth-shell></div>
 
     <main class="page profile-edit-page cadastro-page">
       <section class="profile-edit-hero" aria-labelledby="cadastro-title">
@@ -202,49 +133,6 @@
       </section>
     </main>
 
-    <div class="login-modal" data-login-modal hidden>
-      <button class="login-backdrop" type="button" aria-label="Fechar login" data-login-close></button>
-      <section class="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title">
-        <button class="modal-close" type="button" aria-label="Fechar login" data-login-close>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M18 6 6 18"/>
-            <path d="m6 6 12 12"/>
-          </svg>
-        </button>
-        <span class="login-mark" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <circle cx="5.5" cy="10.5" r="2"/>
-            <circle cx="9.5" cy="6.5" r="2"/>
-            <circle cx="14.5" cy="6.5" r="2"/>
-            <circle cx="18.5" cy="10.5" r="2"/>
-            <path d="M7 17c1.8-3.2 8.2-3.2 10 0 1 1.8-.3 3.5-2.2 2.7a7.1 7.1 0 0 0-5.6 0C7.3 20.5 6 18.8 7 17Z"/>
-          </svg>
-        </span>
-        <div class="login-heading">
-          <h2 id="login-title" data-login-title>Fazer login</h2>
-          <p data-login-subtitle>Entre com CPF e senha para acessar favoritos, notificacoes e sua conta.</p>
-        </div>
-        <form class="login-form" data-login-form>
-          <label class="form-field">
-            <span>CPF</span>
-            <input name="cpf" placeholder="000.000.000-00" autocomplete="username" inputmode="numeric" required maxlength="14">
-          </label>
-          <label class="form-field">
-            <span>Senha</span>
-            <input name="senha" type="password" placeholder="Sua senha" autocomplete="current-password" required>
-          </label>
-          <p class="login-feedback" role="status" data-login-feedback></p>
-          <button class="button button-coral login-submit" type="submit">
-            <span data-login-submit-text>Entrar</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5 12h14"/>
-              <path d="m13 6 6 6-6 6"/>
-            </svg>
-          </button>
-          <p class="login-register-link">Nao possui uma conta? <a href="cadastro.html">Cadastre-se aqui</a></p>
-        </form>
-      </section>
-    </div>
 
     <script type="module" src="js/pages/cadastro.js"></script>
   </body>
