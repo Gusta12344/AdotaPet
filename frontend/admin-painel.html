@@ -3,129 +3,74 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Painel Admin - AdotaPet</title>
+    <title>Central de modera&ccedil;&atilde;o - AdotaPet</title>
     <link rel="icon" type="image/svg+xml" href="assets/adotapet-mark.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
   </head>
-  <body>
+  <body class="admin-shell-page">
     <div data-shared-auth-shell></div>
 
-    <main class="page">
-      <div class="page-title">
-        <p class="overline">Gestao</p>
-        <h1>Painel administrativo</h1>
-        <p class="lead">Cadastre animais com imagens, acompanhe solicitacoes pendentes e resolva a fila por ordem de chegada.</p>
-      </div>
+    <div class="admin-shell" data-admin-shell>
+      <aside class="admin-sidebar" aria-label="Navega&ccedil;&atilde;o administrativa">
+        <nav class="admin-sidebar-nav">
+          <a href="#visao-geral" data-admin-nav-action="overview"><i class="fa-solid fa-house admin-nav-icon library-icon" aria-hidden="true"></i>Vis&atilde;o geral</a>
+          <a href="#solicitacoes" data-admin-nav-action="animals"><i class="fa-solid fa-paw admin-nav-icon library-icon" aria-hidden="true"></i>Animais</a>
+          <a href="#solicitacoes" data-admin-nav-action="pending"><i class="fa-solid fa-file-lines admin-nav-icon library-icon" aria-hidden="true"></i>Solicita&ccedil;&otilde;es<i class="fa-solid fa-chevron-down admin-nav-caret library-icon" aria-hidden="true"></i></a>
+          <a class="admin-sidebar-active" href="#moderacao" data-admin-nav-action="moderation"><i class="fa-solid fa-shield-halved admin-nav-icon library-icon" aria-hidden="true"></i>Central de modera&ccedil;&atilde;o</a>
+          <a href="#solicitacoes" data-admin-nav-action="all"><i class="fa-solid fa-list-check admin-nav-icon library-icon" aria-hidden="true"></i>Todas as solicita&ccedil;&otilde;es</a>
+          <a href="#moderacao" data-admin-nav-action="interviews"><i class="fa-solid fa-envelope admin-nav-icon library-icon" aria-hidden="true"></i>Entrevistas</a>
+          <a href="#moderacao" data-admin-nav-action="messages"><i class="fa-solid fa-comment-dots admin-nav-icon library-icon" aria-hidden="true"></i>Mensagens</a>
+          <a href="#moderacao" data-admin-nav-action="users"><i class="fa-solid fa-users admin-nav-icon library-icon" aria-hidden="true"></i>Usu&aacute;rios</a>
+          <a href="#visao-geral" data-admin-nav-action="reports"><i class="fa-solid fa-chart-line admin-nav-icon library-icon" aria-hidden="true"></i>Relat&oacute;rios</a>
+          <a href="#moderacao" data-admin-nav-action="settings"><i class="fa-solid fa-gear admin-nav-icon library-icon" aria-hidden="true"></i>Configura&ccedil;&otilde;es</a>
+          <a href="#moderacao" data-admin-nav-action="help"><i class="fa-solid fa-circle-question admin-nav-icon library-icon" aria-hidden="true"></i>Central de ajuda</a>
+        </nav>
+        <section class="admin-day-summary" id="visao-geral" aria-label="Resumo do dia" data-admin-day-summary></section>
+      </aside>
 
-      <div class="admin-layout">
-        <section class="panel" aria-labelledby="animal-form-title">
-          <h2 id="animal-form-title">Cadastrar animal</h2>
-          <form id="animal-form" class="form-grid">
-            <div class="field">
-              <label for="nome">Nome</label>
-              <input id="nome" name="nome" required maxlength="100">
-            </div>
-            <div class="field">
-              <label for="especie">Especie</label>
-              <select id="especie" name="especie" required>
-                <option value="cao">Cao</option>
-                <option value="gato">Gato</option>
-                <option value="outro">Outro</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="raca">Raca</label>
-              <input id="raca" name="raca" maxlength="100" placeholder="SRD">
-            </div>
-            <div class="field">
-              <label for="idadeMeses">Idade em meses</label>
-              <input id="idadeMeses" name="idadeMeses" type="number" min="0" step="1" required>
-            </div>
-            <div class="field">
-              <label for="porte">Porte</label>
-              <select id="porte" name="porte" required>
-                <option value="pequeno">Pequeno</option>
-                <option value="medio">Medio</option>
-                <option value="grande">Grande</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="sexo">Sexo</label>
-              <select id="sexo" name="sexo" required>
-                <option value="femea">Femea</option>
-                <option value="macho">Macho</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="dataResgate">Data de resgate</label>
-              <input id="dataResgate" name="dataResgate" type="date" required>
-            </div>
-            <div class="field">
-              <label for="nivelEnergia">Nivel de energia</label>
-              <select id="nivelEnergia" name="nivelEnergia" required>
-                <option value="baixo">Baixo</option>
-                <option value="medio">Medio</option>
-                <option value="alto">Alto</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="protetorId">ID do protetor</label>
-              <input id="protetorId" name="protetorId" type="number" min="1" step="1" required>
-            </div>
-            <label class="checkbox-row">
-              <input name="bomComCriancas" type="checkbox">
-              <span>Bom com criancas</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="bomComCaes" type="checkbox">
-              <span>Bom com caes</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="bomComGatos" type="checkbox">
-              <span>Bom com gatos</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="precisaEspaco" type="checkbox">
-              <span>Precisa de espaco</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="microchip" type="checkbox">
-              <span>Tem microchip</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="castrado" type="checkbox">
-              <span>Castrado</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="vermifugado" type="checkbox">
-              <span>Vermifugado</span>
-            </label>
-            <label class="checkbox-row">
-              <input name="vacinado" type="checkbox">
-              <span>Vacinado</span>
-            </label>
-            <div class="field field-full">
-              <label for="descricao">Descricao</label>
-              <textarea id="descricao" name="descricao"></textarea>
-            </div>
-            <div class="field field-full">
-              <label for="imagens">Imagens do animal</label>
-              <input id="imagens" name="imagens" type="file" accept="image/png,image/jpeg,image/webp" multiple>
-            </div>
-            <div class="field-full form-actions">
-              <button class="button" type="submit">Cadastrar animal</button>
-              <p id="animal-feedback" class="feedback" role="status"></p>
-            </div>
-          </form>
-        </section>
+      <section class="admin-shell-main">
+        <header class="admin-topbar" aria-label="Filtros administrativos">
+          <label class="admin-search">
+            <span class="sr-only">Buscar animal ou adotante</span>
+            <i class="fa-solid fa-magnifying-glass admin-search-icon library-icon" aria-hidden="true"></i>
+            <input data-admin-search type="search" placeholder="Buscar animal ou adotante" autocomplete="off">
+          </label>
+        </header>
 
-        <section class="panel" aria-labelledby="fila-title">
-          <h2 id="fila-title">Fila de adocao</h2>
-          <p id="fila-feedback" class="feedback" role="status"></p>
-          <div id="fila-list" class="queue-list"></div>
-        </section>
-      </div>
-    </main>
+        <main class="moderation-page" id="moderacao">
+          <div class="moderation-heading">
+            <h1>Central de modera&ccedil;&atilde;o</h1>
+            <p class="feedback" role="status" data-moderation-feedback></p>
+          </div>
+
+          <div class="moderation-tabs" data-status-tabs></div>
+
+          <section class="moderation-grid" aria-label="Solicita&ccedil;&otilde;es de ado&ccedil;&atilde;o">
+            <aside class="moderation-panel moderation-queue-panel" id="solicitacoes">
+              <div class="moderation-panel-header">
+                <div class="moderation-title-row">
+                  <h2>Fila de solicita&ccedil;&otilde;es</h2>
+                  <i class="fa-solid fa-filter moderation-filter-icon library-icon" aria-hidden="true"></i>
+                </div>
+                <label class="moderation-order">
+                  <span>Ordenar por:</span>
+                  <select data-admin-order>
+                    <option value="mais_antigas">Mais antigas</option>
+                    <option value="mais_recentes">Mais recentes</option>
+                  </select>
+                </label>
+              </div>
+              <div class="moderation-queue" data-moderation-queue></div>
+            </aside>
+
+            <section class="moderation-panel moderation-detail" data-moderation-detail aria-live="polite"></section>
+
+            <aside class="moderation-panel moderation-decision" data-moderation-decision></aside>
+          </section>
+        </main>
+      </section>
+    </div>
 
     <script type="module" src="js/pages/admin-painel.js"></script>
   </body>

@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/animais").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/animais/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/moderacao/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/adocoes").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/adocoes/**").hasRole("ADMIN")
                         .anyRequest().authenticated()

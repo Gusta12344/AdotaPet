@@ -102,7 +102,14 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
     animal_id         INT      NOT NULL,
     adotante_id       INT      NOT NULL,
     data_solicitacao  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status            ENUM('pendente', 'aprovada', 'recusada') NOT NULL DEFAULT 'pendente',
+    status            ENUM('pendente', 'em_analise', 'aprovada', 'recusada') NOT NULL DEFAULT 'pendente',
+    data_inicio_analise DATETIME NULL,
+    data_decisao      DATETIME NULL,
+    admin_responsavel_id INT NULL,
+    dados_adotante_conferidos TINYINT(1) NOT NULL DEFAULT 0,
+    animal_disponivel_conferido TINYINT(1) NOT NULL DEFAULT 0,
+    contato_revisado  TINYINT(1) NOT NULL DEFAULT 0,
+    observacao_admin  TEXT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_sol_animal   FOREIGN KEY (animal_id)
         REFERENCES animal (id)
@@ -111,6 +118,28 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
     CONSTRAINT fk_sol_adotante FOREIGN KEY (adotante_id)
         REFERENCES adotante (id)
         ON DELETE RESTRICT
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_solicitacao_admin_responsavel FOREIGN KEY (admin_responsavel_id)
+        REFERENCES admin (id)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS solicitacao_moderacao_evento (
+    id              INT NOT NULL AUTO_INCREMENT,
+    solicitacao_id  INT NOT NULL,
+    admin_id        INT NULL,
+    tipo            ENUM('solicitacao_enviada', 'analise_iniciada', 'checklist_atualizado', 'aprovada', 'recusada', 'recusa_automatica') NOT NULL,
+    observacao      TEXT NULL,
+    data_evento     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_evento_solicitacao FOREIGN KEY (solicitacao_id)
+        REFERENCES solicitacao_adocao (id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_evento_admin FOREIGN KEY (admin_id)
+        REFERENCES admin (id)
+        ON DELETE SET NULL
         ON UPDATE CASCADE
 );
 
@@ -153,7 +182,22 @@ CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem);
 CREATE INDEX idx_favorito_animal ON adotante_favorito (animal_id);
 CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status);
 CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao);
+CREATE INDEX idx_sol_status_decisao ON solicitacao_adocao (status, data_decisao);
+CREATE INDEX idx_evento_solicitacao_data ON solicitacao_moderacao_evento (solicitacao_id, data_evento);
 CREATE INDEX idx_notificacao_adotante_lida ON notificacao (adotante_id, lida, data_criacao);
+
+-- Atualizacao manual para bancos locais ja criados antes da Central de Moderacao:
+-- ALTER TABLE solicitacao_adocao
+--   MODIFY status ENUM('pendente', 'em_analise', 'aprovada', 'recusada') NOT NULL DEFAULT 'pendente',
+--   ADD COLUMN data_inicio_analise DATETIME NULL,
+--   ADD COLUMN data_decisao DATETIME NULL,
+--   ADD COLUMN admin_responsavel_id INT NULL,
+--   ADD COLUMN dados_adotante_conferidos TINYINT(1) NOT NULL DEFAULT 0,
+--   ADD COLUMN animal_disponivel_conferido TINYINT(1) NOT NULL DEFAULT 0,
+--   ADD COLUMN contato_revisado TINYINT(1) NOT NULL DEFAULT 0,
+--   ADD COLUMN observacao_admin TEXT NULL,
+--   ADD CONSTRAINT fk_solicitacao_admin_responsavel FOREIGN KEY (admin_responsavel_id) REFERENCES admin(id);
+-- CREATE TABLE IF NOT EXISTS solicitacao_moderacao_evento (... conforme DDL acima ...);
 
 -- ============================================================
 --  DML — Dados de Exemplo
@@ -309,6 +353,25 @@ VALUES
     (2, 2, '2026-03-11 11:45:00', 'pendente'),  -- Carlos → Thor
     -- Solicitação já aprovada (Duque, para mostrar histórico)
     (9, 4, '2026-03-09 08:00:00', 'aprovada');  -- João → Duque (aprovada, daí em_analise)
+
+UPDATE solicitacao_adocao
+SET data_decisao = '2026-03-09 08:05:00',
+    admin_responsavel_id = 1,
+    dados_adotante_conferidos = 1,
+    animal_disponivel_conferido = 1,
+    contato_revisado = 1,
+    observacao_admin = 'Solicitacao aprovada nos dados iniciais.'
+WHERE animal_id = 9 AND adotante_id = 4 AND status = 'aprovada';
+
+INSERT INTO solicitacao_moderacao_evento (solicitacao_id, admin_id, tipo, observacao, data_evento)
+SELECT id, NULL, 'solicitacao_enviada', 'Solicitacao enviada pelo adotante.', data_solicitacao
+FROM solicitacao_adocao
+WHERE data_solicitacao >= '2026-03-09 00:00:00';
+
+INSERT INTO solicitacao_moderacao_evento (solicitacao_id, admin_id, tipo, observacao, data_evento)
+SELECT id, 1, 'aprovada', 'Solicitacao aprovada nos dados iniciais.', data_decisao
+FROM solicitacao_adocao
+WHERE animal_id = 9 AND adotante_id = 4 AND status = 'aprovada';
 
 INSERT INTO notificacao (adotante_id, tipo, titulo, mensagem, lida, data_criacao, referencia_tipo, referencia_id)
 VALUES

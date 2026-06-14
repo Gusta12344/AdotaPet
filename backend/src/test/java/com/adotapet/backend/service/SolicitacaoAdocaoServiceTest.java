@@ -30,6 +30,7 @@ import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
 import com.adotapet.backend.repository.SolicitacaoAdocaoRepository;
+import com.adotapet.backend.repository.SolicitacaoModeracaoEventoRepository;
 import com.adotapet.backend.dto.SolicitacaoRequest;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,12 +48,15 @@ class SolicitacaoAdocaoServiceTest {
     @Mock
     private NotificacaoService notificacaoService;
 
+    @Mock
+    private SolicitacaoModeracaoEventoRepository eventoRepository;
+
     private SolicitacaoAdocaoService solicitacaoService;
 
     @BeforeEach
     void setUp() {
         solicitacaoService = new SolicitacaoAdocaoService(solicitacaoRepository, animalRepository, adotanteRepository,
-                notificacaoService);
+                notificacaoService, eventoRepository);
     }
 
     @Test
@@ -62,7 +66,7 @@ class SolicitacaoAdocaoServiceTest {
 
         when(animalRepository.findById(3)).thenReturn(java.util.Optional.of(animal));
         when(adotanteRepository.findById(7)).thenReturn(java.util.Optional.of(adotante));
-        when(solicitacaoRepository.existsByAnimalIdAndAdotanteIdAndStatus(3, 7, StatusSolicitacao.pendente))
+        when(solicitacaoRepository.existsByAnimalIdAndAdotanteIdAndStatusIn(eq(3), eq(7), any()))
                 .thenReturn(false);
         when(solicitacaoRepository.save(any(SolicitacaoAdocao.class))).thenAnswer(invocation -> {
             SolicitacaoAdocao solicitacao = invocation.getArgument(0);
@@ -106,7 +110,8 @@ class SolicitacaoAdocaoServiceTest {
                 LocalDateTime.of(2026, 6, 2, 10, 0));
 
         when(solicitacaoRepository.findById(12)).thenReturn(java.util.Optional.of(solicitacao));
-        when(solicitacaoRepository.findByAnimalIdAndStatus(3, StatusSolicitacao.pendente)).thenReturn(List.of(solicitacao));
+        when(solicitacaoRepository.findByAnimalIdAndStatusInOrderByDataSolicitacaoAsc(eq(3), any()))
+                .thenReturn(List.of(solicitacao));
 
         solicitacaoService.atualizarStatus(12, StatusSolicitacao.aprovada);
 

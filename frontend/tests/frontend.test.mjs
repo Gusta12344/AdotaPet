@@ -604,6 +604,43 @@ test("chooseAnimalImageUrl fetches a random dog or cat image when the animal has
   assert.equal(catUrl, "https://images.example.com/cat.jpg");
 });
 
+test("chooseAnimalImageUrl shares an in-flight fallback image for the same animal", async () => {
+  const storage = storageMock();
+  let calls = 0;
+  const animal = { id: 2, nome: "Thor", especie: "cao", imagemUrls: [] };
+
+  const [firstUrl, secondUrl] = await Promise.all([
+    chooseAnimalImageUrl(animal, {
+      storage,
+      fetchImpl: async () => {
+        calls += 1;
+        return {
+          ok: true,
+          async json() {
+            return { message: `https://images.example.com/dog-${calls}.jpg` };
+          },
+        };
+      },
+    }),
+    chooseAnimalImageUrl(animal, {
+      storage,
+      fetchImpl: async () => {
+        calls += 1;
+        return {
+          ok: true,
+          async json() {
+            return { message: `https://images.example.com/dog-${calls}.jpg` };
+          },
+        };
+      },
+    }),
+  ]);
+
+  assert.equal(calls, 1);
+  assert.equal(firstUrl, "https://images.example.com/dog-1.jpg");
+  assert.equal(secondUrl, "https://images.example.com/dog-1.jpg");
+});
+
 test("chooseAnimalImageUrl reuses cached fallback image URLs without calling random APIs again", async () => {
   const storage = storageMock();
   const animal = { id: 10, nome: "Luna", especie: "cao", imagemUrls: [] };
@@ -920,8 +957,25 @@ test("shared auth shell renders reusable header and login modal", () => {
   assert.match(textTree(root.body), /IFC Campus Fraiburgo/);
   const githubLink = root.querySelector(".site-footer-github");
   assert.equal(githubLink.getAttribute("href"), "https://github.com/Gusta12344");
-  assert.ok(findBySelector(githubLink, "svg"));
+  assert.ok(findByClass(githubLink, "fa-github"));
   assert.equal(root.querySelectorAll("[data-login-close]").length, 2);
+});
+
+test("admin shared auth shell replaces the sidebar brand with administrative context", () => {
+  const root = documentMock();
+  root.body.className = "admin-shell-page";
+  const mount = root.createElement("div");
+  mount.setAttribute("data-shared-auth-shell", "");
+  root.body.append(mount);
+
+  assert.equal(renderSharedAuthShell(root), true);
+  assert.ok(findByClass(root.body, "admin-site-header"));
+  assert.ok(findByClass(root.body, "brand-context"));
+  assert.match(textTree(root.body), /Area Administrativa/);
+
+  const navText = textTree(root.querySelector(".nav-links"));
+  assert.match(navText, /Inicio/);
+  assert.doesNotMatch(navText, /Recomendados/);
 });
 
 test("header auth controller mounts shared shell before wiring controls", () => {

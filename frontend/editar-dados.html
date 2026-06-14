@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Editar dados - AdotaPet</title>
     <link rel="icon" type="image/svg+xml" href="assets/adotapet-mark.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="stylesheet" href="css/styles.css">
   </head>
   <body>
@@ -18,7 +19,7 @@
           <p class="lead" data-profile-mode-lead>Mantenha seu perfil atualizado para que as recomendacoes continuem alinhadas com sua rotina e seu lar.</p>
         </div>
         <aside class="profile-summary" aria-label="Resumo da conta">
-          <span class="profile-summary-avatar" aria-hidden="true"></span>
+          <i class="fa-solid fa-user profile-summary-avatar library-icon" aria-hidden="true"></i>
           <div>
             <p data-profile-summary-status>Perfil ativo</p>
             <strong data-profile-summary-name>Adotante</strong>
@@ -126,10 +127,7 @@
           <div class="field-full form-actions">
             <button class="button button-coral" type="submit">
               Salvar alteracoes
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 12h14"/>
-                <path d="m13 6 6 6-6 6"/>
-              </svg>
+              <i class="fa-solid fa-arrow-right library-icon" aria-hidden="true"></i>
             </button>
           </div>
           <p id="editar-dados-feedback" class="feedback field-full" role="status"></p>

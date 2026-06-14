@@ -126,23 +126,27 @@ test("shared auth shell keeps reusable account and login controls in one module"
   assert.match(script, /data-edit-profile/);
 });
 
-test("admin animal form accepts multiple uploaded images", () => {
+test("admin moderation panel exposes the central moderation structure", () => {
   const html = readPage("admin-painel.html");
-  const inputMatch = html.match(/<input[^>]+id="imagens"[^>]+>/);
 
-  assert.ok(inputMatch, "admin animal image input should exist");
-  assert.match(inputMatch[0], /name="imagens"/);
-  assert.match(inputMatch[0], /type="file"/);
-  assert.match(inputMatch[0], /multiple/);
+  assert.match(html, /data-admin-shell/);
+  assert.match(html, /data-admin-search/);
+  assert.match(html, /data-status-tabs/);
+  assert.match(html, /data-moderation-queue/);
+  assert.match(html, /data-moderation-detail/);
+  assert.match(html, /data-moderation-decision/);
+  assert.match(html, /js\/pages\/admin-painel\.js/);
 });
 
-test("admin panel uses the authenticated shared header and login modal", () => {
+test("admin panel uses the shared header and keeps sidebar links actionable", () => {
   const html = readPage("admin-painel.html");
 
   assert.match(html, /data-shared-auth-shell/);
+  assert.doesNotMatch(html, /admin-sidebar-brand/);
   assert.doesNotMatch(html, /<header class="site-header">/);
   assert.doesNotMatch(html, /data-login-modal/);
-  assert.doesNotMatch(html, /id="admin-logout"/);
+  assert.match(html, /data-admin-nav-action/);
+  assert.doesNotMatch(html, /aria-disabled="true"/);
 });
 
 test("hidden profile sections stay hidden even when component classes define display", () => {
@@ -210,4 +214,28 @@ test("top navigation does not show the registration tab", () => {
 
     assert.doesNotMatch(navMatch[1], /href="cadastro\.html"/, `${page} should not show Cadastro in the top navigation`);
   }
+});
+
+test("frontend pages use the shared Font Awesome icon library instead of hand-built code icons", () => {
+  const iconLibraryLink = /https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/font-awesome\/6\.5\.2\/css\/all\.min\.css/;
+  const productionScripts = [
+    "js/shared-auth-shell.js",
+    "js/ui.js",
+    "js/pages/animal.js",
+    "js/admin-moderacao-render.js",
+  ];
+  const css = fs.readFileSync(path.join(root, "css/styles.css"), "utf8");
+
+  for (const page of pages) {
+    const html = readPage(page);
+    assert.match(html, iconLibraryLink, `${page} should load Font Awesome`);
+    assert.doesNotMatch(html, /<svg\b/i, `${page} should not build icons with inline SVG`);
+  }
+
+  for (const scriptPath of productionScripts) {
+    const script = fs.readFileSync(path.join(root, scriptPath), "utf8");
+    assert.doesNotMatch(script, /createElementNS|svgIcon|function icon\(/, `${scriptPath} should use library icons`);
+  }
+
+  assert.doesNotMatch(css, /content:\s*"\\(?:2661|2665|2304|2303)"/, "CSS should not use unicode icon content");
 });

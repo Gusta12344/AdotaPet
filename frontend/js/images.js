@@ -4,6 +4,7 @@ const RANDOM_DOG_API = "https://dog.ceo/api/breeds/image/random";
 const RANDOM_CAT_API = "https://api.thecatapi.com/v1/images/search";
 const FALLBACK_IMAGE = "assets/adotapet-mark.svg";
 const IMAGE_CACHE_PREFIX = "adotapet:animal-image:";
+const pendingImageRequests = new Map();
 
 export function fallbackAnimalImageUrl() {
   return FALLBACK_IMAGE;
@@ -41,6 +42,26 @@ export async function chooseAnimalImageUrl(animal, {
     return FALLBACK_IMAGE;
   }
 
+  const key = animalImageCacheKey(animal);
+  const pendingUrl = key ? pendingImageRequests.get(key) : null;
+  if (pendingUrl) {
+    return pendingUrl;
+  }
+
+  const imageRequest = fetchFallbackAnimalImageUrl(animal, { fetchImpl, storage });
+  if (!key) {
+    return imageRequest;
+  }
+
+  pendingImageRequests.set(key, imageRequest);
+  try {
+    return await imageRequest;
+  } finally {
+    pendingImageRequests.delete(key);
+  }
+}
+
+async function fetchFallbackAnimalImageUrl(animal, { fetchImpl, storage }) {
   try {
     if (animal?.especie === "cao") {
       const response = await fetchImpl(RANDOM_DOG_API);

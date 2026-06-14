@@ -38,6 +38,28 @@ public class SolicitacaoAdocao {
     @Column(nullable = false)
     private StatusSolicitacao status = StatusSolicitacao.pendente;
 
+    @Column(name = "data_inicio_analise")
+    private LocalDateTime dataInicioAnalise;
+
+    @Column(name = "data_decisao")
+    private LocalDateTime dataDecisao;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "admin_responsavel_id")
+    private Admin adminResponsavel;
+
+    @Column(name = "dados_adotante_conferidos", nullable = false)
+    private boolean dadosAdotanteConferidos;
+
+    @Column(name = "animal_disponivel_conferido", nullable = false)
+    private boolean animalDisponivelConferido;
+
+    @Column(name = "contato_revisado", nullable = false)
+    private boolean contatoRevisado;
+
+    @Column(name = "observacao_admin", columnDefinition = "TEXT")
+    private String observacaoAdmin;
+
     @PrePersist
     public void prePersist() {
         if (dataSolicitacao == null) {
@@ -86,5 +108,61 @@ public class SolicitacaoAdocao {
 
     public void setStatus(StatusSolicitacao status) {
         this.status = status;
+    }
+
+    public LocalDateTime getDataInicioAnalise() {
+        return dataInicioAnalise;
+    }
+
+    public void setDataInicioAnalise(LocalDateTime dataInicioAnalise) {
+        this.dataInicioAnalise = dataInicioAnalise;
+    }
+
+    public LocalDateTime getDataDecisao() {
+        return dataDecisao;
+    }
+
+    public void setDataDecisao(LocalDateTime dataDecisao) {
+        this.dataDecisao = dataDecisao;
+    }
+
+    public Admin getAdminResponsavel() {
+        return adminResponsavel;
+    }
+
+    public void setAdminResponsavel(Admin adminResponsavel) {
+        this.adminResponsavel = adminResponsavel;
+    }
+
+    public boolean isDadosAdotanteConferidos() {
+        return dadosAdotanteConferidos;
+    }
+
+    public void setDadosAdotanteConferidos(boolean dadosAdotanteConferidos) {
+        this.dadosAdotanteConferidos = dadosAdotanteConferidos;
+    }
+
+    public boolean isAnimalDisponivelConferido() {
+        return animalDisponivelConferido;
+    }
+
+    public void setAnimalDisponivelConferido(boolean animalDisponivelConferido) {
+        this.animalDisponivelConferido = animalDisponivelConferido;
+    }
+
+    public boolean isContatoRevisado() {
+        return contatoRevisado;
+    }
+
+    public void setContatoRevisado(boolean contatoRevisado) {
+        this.contatoRevisado = contatoRevisado;
+    }
+
+    public String getObservacaoAdmin() {
+        return observacaoAdmin;
+    }
+
+    public void setObservacaoAdmin(String observacaoAdmin) {
+        this.observacaoAdmin = observacaoAdmin;
     }
 }
