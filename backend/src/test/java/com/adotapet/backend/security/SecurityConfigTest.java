@@ -72,7 +72,7 @@ class SecurityConfigTest {
 
         @Bean
         AnimalService animalService() {
-            return new AnimalService(null, null, null, null) {
+            return new AnimalService(null, null, null, null, null, null, null) {
                 @Override
                 public List<AnimalResponse> listarDisponiveis() {
                     return List.of();

@@ -1,0 +1,30 @@
+.feedback {
+  min-height: 24px;
+  margin: 0;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.feedback:not(:empty) {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  padding: 6px 10px;
+}
+
+#home-feedback {
+  width: min(1360px, calc(100% - 72px));
+  margin: 0 auto 12px;
+}
+
+.feedback-error {
+  background: #fff1ef;
+  color: var(--danger);
+}
+
+.feedback-success {
+  background: #edf8f1;
+  color: var(--success);
+}

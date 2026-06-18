@@ -1,0 +1,12 @@
+.grid {
+  width: min(1360px, calc(100% - 72px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 24px;
+}
+
+#recomendados-list {
+  grid-template-columns: repeat(auto-fill, minmax(288px, 288px));
+  justify-content: center;
+}

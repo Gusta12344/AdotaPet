@@ -4,6 +4,9 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.adotapet.backend.model.SolicitacaoModeracaoEvento;
 
@@ -11,4 +14,11 @@ public interface SolicitacaoModeracaoEventoRepository extends JpaRepository<Soli
 
     @EntityGraph(attributePaths = {"admin"})
     List<SolicitacaoModeracaoEvento> findBySolicitacaoIdOrderByDataEventoAsc(Integer solicitacaoId);
+
+    @Modifying
+    @Query("""
+            delete from SolicitacaoModeracaoEvento evento
+             where evento.solicitacao.animal.id = :animalId
+            """)
+    void deleteBySolicitacaoAnimalId(@Param("animalId") Integer animalId);
 }

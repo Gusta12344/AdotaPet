@@ -1,0 +1,52 @@
+/* Admin design tokens shared by all admin pages. */
+.admin-shell-page {
+  --admin-bg: #f8faf9;
+  --admin-surface: #ffffff;
+  --admin-surface-soft: #f5f7f6;
+  --admin-border: #e1e6e3;
+  --admin-text: #101816;
+  --admin-muted: #596762;
+  --admin-accent: #176b52;
+  --admin-accent-strong: #0f513f;
+  --admin-sidebar: #00563b;
+  --admin-sidebar-dark: #00452f;
+  --admin-green: #057345;
+  --admin-green-strong: #00633d;
+  --admin-green-soft: #dff3e7;
+  --admin-orange: #f39a2e;
+  --admin-orange-soft: #fff0dc;
+  --admin-danger: #b84633;
+  --admin-red: #ef4444;
+  --admin-red-soft: #ffe0de;
+  --admin-blue-soft: #e9eefc;
+  --admin-shadow: 0 18px 40px rgba(28, 42, 36, 0.05);
+  min-height: 100vh;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+html.admin-theme-dark .admin-shell-page {
+  --admin-bg: #101915;
+  --admin-surface: #16221d;
+  --admin-surface-soft: #20332b;
+  --admin-border: #2f463d;
+  --admin-text: #f1fbf6;
+  --admin-muted: #b0c5bc;
+  --admin-accent: #6dd2a5;
+  --admin-accent-strong: #98e7c4;
+  --admin-orange: #ff9a56;
+  --admin-danger: #ff8b78;
+  --admin-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

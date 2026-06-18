@@ -12,5 +12,7 @@ public interface NotificacaoRepository extends JpaRepository<Notificacao, Intege
 
     List<Notificacao> findByAdotanteIdAndLidaFalseOrderByDataCriacaoDesc(Integer adotanteId);
 
+    List<Notificacao> findTop5ByLidaFalseOrderByDataCriacaoDesc();
+
     void deleteByAdotanteId(Integer adotanteId);
 }

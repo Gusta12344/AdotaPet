@@ -15,4 +15,6 @@ public interface AnimalRepository extends JpaRepository<Animal, Integer> {
 
     @EntityGraph(attributePaths = "protetor")
     List<Animal> findAllByOrderByDataCadastroAsc();
+
+    long countByStatus(StatusAnimal status);
 }

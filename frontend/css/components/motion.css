@@ -1,0 +1,340 @@
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdown-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scaleY(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+@keyframes dropdown-collapse {
+  from {
+    opacity: 1;
+    max-height: 520px;
+    transform: translateY(0) scaleY(1);
+  }
+
+  to {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-14px) scaleY(0.96);
+  }
+}
+
+@media (max-width: 1180px) {
+  .nav,
+  .site-footer-inner,
+  .page,
+  .animals-header,
+  .grid,
+  .feedback,
+  .animals-end-message {
+    width: min(100% - 32px, 1360px);
+  }
+
+  .nav {
+    grid-template-columns: auto 1fr;
+  }
+
+  .nav-actions {
+    display: none;
+  }
+
+  .animal-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .search-field {
+    grid-column: 1 / -1;
+  }
+
+  .filter-button {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .benefit-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-inline: 24px;
+  }
+
+  .animal-detail-page {
+    width: min(100% - 32px, 1360px);
+  }
+
+  .animal-detail-shell {
+    max-width: none;
+    grid-template-columns: 1fr;
+  }
+
+  .detail-photo-frame {
+    height: min(72vh, 680px);
+  }
+
+  .detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-data-section-main {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid #dedfdb;
+    padding-right: 0;
+    padding-bottom: 22px;
+  }
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 36px 18px 0;
+  }
+
+  .hero-copy {
+    width: min(100%, 620px);
+  }
+
+  .hero-panel {
+    min-height: 330px;
+  }
+
+  .hero-art {
+    position: relative;
+    inset: auto;
+  }
+
+  .hero-art img {
+    width: min(760px, 125%);
+    transform: translateY(0);
+  }
+
+  .tip-card {
+    right: 10px;
+  }
+
+  .animals-header {
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-edit-hero,
+  .profile-edit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-side-panel {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .detail-photo-frame {
+    height: min(70vh, 560px);
+  }
+
+  .detail-animal-name {
+    font-size: 4.15rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .nav {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 10px;
+    padding: 14px 0;
+  }
+
+  .nav-links {
+    width: 100%;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .site-footer-inner {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero h1,
+  .profile-edit-copy h1,
+  .page-title h1,
+  .detail-heading h1,
+  .detail-panel > h1 {
+    font-size: 2.55rem;
+  }
+
+  .hero {
+    padding: 36px 34px 0;
+  }
+
+  .hero-copy {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero .actions,
+  .adoption-proof,
+  .form-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .button,
+  .button-coral,
+  .button-secondary {
+    width: 100%;
+    max-width: 290px;
+  }
+
+  .animal-toolbar,
+  .form-grid,
+  .animal-facts,
+  .detail-grid,
+  .grid,
+  .benefit-strip,
+  .profile-side-panel {
+    grid-template-columns: 1fr;
+  }
+
+  #recomendados-list {
+    grid-template-columns: minmax(0, 288px);
+  }
+
+  .profile-edit-hero {
+    padding: 24px;
+  }
+
+  .detail-photo-frame {
+    height: 460px;
+  }
+
+  .detail-thumb-strip {
+    right: 14px;
+    bottom: 14px;
+    left: 14px;
+    gap: 8px;
+  }
+
+  .detail-status-pill {
+    top: 14px;
+    left: 14px;
+    font-size: 0.84rem;
+    padding-inline: 13px;
+  }
+
+  .detail-name-row {
+    gap: 16px;
+  }
+
+  .detail-animal-name {
+    font-size: 3.35rem;
+  }
+
+  .detail-heart {
+    width: 42px;
+    height: 42px;
+  }
+
+  .detail-data-row,
+  .detail-data-row-icon {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .detail-row-icon {
+    display: none;
+  }
+
+  .detail-submit {
+    min-height: 62px;
+    font-size: 1.08rem;
+  }
+
+  .animal-toolbar {
+    padding: 10px;
+  }
+
+  .filter-button {
+    width: 100%;
+  }
+
+  .animal-card-media {
+    height: 220px;
+  }
+
+  .benefit-strip article {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 0 18px;
+  }
+
+  .benefit-strip article:last-child {
+    border-bottom: 0;
+  }
+
+  .help-button {
+    right: 16px;
+    bottom: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

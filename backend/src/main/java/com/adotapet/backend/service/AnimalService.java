@@ -21,7 +21,10 @@ import com.adotapet.backend.model.StatusAnimal;
 import com.adotapet.backend.model.TipoMoradia;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
+import com.adotapet.backend.repository.FavoritoAnimalRepository;
 import com.adotapet.backend.repository.ProtetorRepository;
+import com.adotapet.backend.repository.SolicitacaoAdocaoRepository;
+import com.adotapet.backend.repository.SolicitacaoModeracaoEventoRepository;
 
 @Service
 public class AnimalService {
@@ -30,18 +33,34 @@ public class AnimalService {
     private final ProtetorRepository protetorRepository;
     private final AdotanteRepository adotanteRepository;
     private final AnimalImagemStorageService animalImagemStorageService;
+    private final FavoritoAnimalRepository favoritoAnimalRepository;
+    private final SolicitacaoAdocaoRepository solicitacaoAdocaoRepository;
+    private final SolicitacaoModeracaoEventoRepository solicitacaoModeracaoEventoRepository;
 
     public AnimalService(AnimalRepository animalRepository, ProtetorRepository protetorRepository,
-            AdotanteRepository adotanteRepository, AnimalImagemStorageService animalImagemStorageService) {
+            AdotanteRepository adotanteRepository, AnimalImagemStorageService animalImagemStorageService,
+            FavoritoAnimalRepository favoritoAnimalRepository, SolicitacaoAdocaoRepository solicitacaoAdocaoRepository,
+            SolicitacaoModeracaoEventoRepository solicitacaoModeracaoEventoRepository) {
         this.animalRepository = animalRepository;
         this.protetorRepository = protetorRepository;
         this.adotanteRepository = adotanteRepository;
         this.animalImagemStorageService = animalImagemStorageService;
+        this.favoritoAnimalRepository = favoritoAnimalRepository;
+        this.solicitacaoAdocaoRepository = solicitacaoAdocaoRepository;
+        this.solicitacaoModeracaoEventoRepository = solicitacaoModeracaoEventoRepository;
     }
 
     @Transactional(readOnly = true)
     public List<AnimalResponse> listarDisponiveis() {
         return animalRepository.findByStatusOrderByDataCadastroAsc(StatusAnimal.disponivel)
+                .stream()
+                .map(AnimalResponse::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnimalResponse> listarTodos() {
+        return animalRepository.findAllByOrderByDataCadastroAsc()
                 .stream()
                 .map(AnimalResponse::fromEntity)
                 .toList();
@@ -106,6 +125,50 @@ public class AnimalService {
         Animal animal = buscarAnimal(id);
         animal.setStatus(status);
         return AnimalResponse.fromEntity(animal);
+    }
+
+    @Transactional
+    public AnimalResponse atualizar(Integer id, AnimalRequest request) {
+        if (request.especie() == Especie.indiferente) {
+            throw new RegraNegocioException("Especie do animal deve ser cao, gato ou outro");
+        }
+        if (request.porte() == Porte.indiferente) {
+            throw new RegraNegocioException("Porte do animal deve ser pequeno, medio ou grande");
+        }
+
+        Animal animal = buscarAnimal(id);
+        Protetor protetor = protetorRepository.findById(request.protetorId())
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Protetor nao encontrado"));
+
+        animal.setNome(request.nome());
+        animal.setEspecie(request.especie());
+        animal.setRaca(request.raca());
+        animal.setIdadeMeses(request.idadeMeses());
+        animal.setPorte(request.porte());
+        animal.setSexo(request.sexo());
+        animal.setDataResgate(request.dataResgate());
+        animal.setNivelEnergia(request.nivelEnergia());
+        animal.setBomComCriancas(request.bomComCriancas());
+        animal.setBomComCaes(request.bomComCaes());
+        animal.setBomComGatos(request.bomComGatos());
+        animal.setPrecisaEspaco(request.precisaEspaco());
+        animal.setMicrochip(request.microchip());
+        animal.setCastrado(request.castrado());
+        animal.setVermifugado(request.vermifugado());
+        animal.setVacinado(request.vacinado());
+        animal.setDescricao(request.descricao());
+        animal.setProtetor(protetor);
+
+        return AnimalResponse.fromEntity(animal);
+    }
+
+    @Transactional
+    public void excluir(Integer id) {
+        Animal animal = buscarAnimal(id);
+        solicitacaoModeracaoEventoRepository.deleteBySolicitacaoAnimalId(id);
+        solicitacaoAdocaoRepository.deleteByAnimalId(id);
+        favoritoAnimalRepository.deleteByAnimalId(id);
+        animalRepository.delete(animal);
     }
 
     @Transactional(readOnly = true)

@@ -7,7 +7,9 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.adotapet.backend.model.SolicitacaoAdocao;
 import com.adotapet.backend.model.StatusSolicitacao;
@@ -42,4 +44,11 @@ public interface SolicitacaoAdocaoRepository extends JpaRepository<SolicitacaoAd
 
     boolean existsByAnimalIdAndAdotanteIdAndStatusIn(Integer animalId, Integer adotanteId,
             Collection<StatusSolicitacao> statuses);
+
+    @Modifying
+    @Query("""
+            delete from SolicitacaoAdocao solicitacao
+             where solicitacao.animal.id = :animalId
+            """)
+    void deleteByAnimalId(@Param("animalId") Integer animalId);
 }

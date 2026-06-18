@@ -1,0 +1,89 @@
+.animal-facts,
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 12px -12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.fact,
+.detail-fact {
+  min-height: 54px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: #fbfdfc;
+  padding: 8px 6px;
+}
+
+.fact:nth-child(3n),
+.detail-fact:nth-child(3n) {
+  border-right: 0;
+}
+
+dt {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+dt::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  vertical-align: 1px;
+}
+
+dd {
+  margin: 2px 0 0 11px;
+  color: #26342f;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(92px, 0.9fr);
+  gap: 8px;
+  margin-top: auto;
+}
+
+.button-card,
+.button-save {
+  min-height: 38px;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  box-shadow: none;
+}
+
+.button-save {
+  background: #ffffff;
+  color: var(--accent);
+  border-color: var(--accent);
+  gap: 7px;
+}
+
+.button-save-active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.button-save-icon .library-icon {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.button-save-active .button-save-icon .library-icon {
+  color: #ff2d2d;
+}
+
+.score-label {
+  grid-column: 1 / -1;
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 900;
+}

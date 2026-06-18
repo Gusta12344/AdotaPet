@@ -1,0 +1,89 @@
+.page {
+  width: min(1360px, calc(100% - 72px));
+  margin: 0 auto;
+  padding: 42px 0 72px;
+}
+
+.home-page {
+  width: 100%;
+  padding: 0;
+}
+
+.hero {
+  min-height: 412px;
+  padding: 34px max(42px, calc((100vw - 1360px) / 2)) 0;
+  display: grid;
+  grid-template-columns: minmax(410px, 0.88fr) minmax(560px, 1.12fr);
+  gap: 44px;
+  align-items: stretch;
+  background:
+    radial-gradient(circle at 78% 28%, rgba(225, 244, 235, 0.86), transparent 36%),
+    linear-gradient(90deg, #f7fbf8 0, #f4faf6 48%, #e9f6f0 100%);
+  overflow: hidden;
+}
+
+.hero-copy {
+  padding: 10px 0 32px;
+  align-self: center;
+  animation: fade-up 520ms var(--ease) both;
+}
+
+.welcome-pill {
+  width: fit-content;
+  margin: 0 0 18px;
+  border-radius: var(--radius);
+  background: #e1f4eb;
+  color: var(--accent);
+  padding: 8px 14px;
+  font-size: 0.96rem;
+  font-weight: 800;
+}
+
+.hero h1,
+.page-title h1,
+.detail-heading h1,
+.detail-panel > h1 {
+  margin: 0;
+  color: var(--text);
+  font-weight: 900;
+  line-height: 1.02;
+}
+
+.hero h1 {
+  max-width: 11ch;
+  font-size: clamp(3.3rem, 5.2vw, 4.95rem);
+}
+
+.page-title h1,
+.detail-heading h1,
+.detail-panel > h1 {
+  font-size: 3.2rem;
+}
+
+.lead {
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: 1.08rem;
+  overflow-wrap: break-word;
+}
+
+.hero .lead {
+  max-width: 44ch;
+  margin: 20px 0 0;
+  color: #4c5f58;
+  font-size: 1.08rem;
+}
+
+.actions,
+.card-actions,
+.queue-actions,
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.hero .actions {
+  margin-top: 18px;
+}

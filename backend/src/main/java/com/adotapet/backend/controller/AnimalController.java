@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -87,8 +88,19 @@ public class AnimalController {
         return ResponseEntity.status(HttpStatus.CREATED).body(animalService.cadastrarComArquivos(request, imagens));
     }
 
+    @PutMapping("/{id}")
+    public AnimalResponse atualizar(@PathVariable Integer id, @Valid @RequestBody AnimalRequest request) {
+        return animalService.atualizar(id, request);
+    }
+
     @PutMapping("/{id}/status")
     public AnimalResponse atualizarStatus(@PathVariable Integer id, @Valid @RequestBody AnimalStatusRequest request) {
         return animalService.atualizarStatus(id, request.status());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Integer id) {
+        animalService.excluir(id);
+        return ResponseEntity.noContent().build();
     }
 }

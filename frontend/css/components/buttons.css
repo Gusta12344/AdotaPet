@@ -1,0 +1,79 @@
+.button {
+  min-height: 50px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 12px 20px;
+  background: var(--accent);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 14px 28px rgba(0, 113, 79, 0.16);
+  font: inherit;
+  font-weight: 900;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 180ms var(--ease),
+    border-color 180ms var(--ease),
+    box-shadow 180ms var(--ease),
+    color 180ms var(--ease),
+    transform 180ms var(--ease);
+}
+
+.button .library-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.button:hover {
+  background: var(--accent-strong);
+  box-shadow: 0 17px 34px rgba(0, 113, 79, 0.21);
+  transform: translateY(-2px);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+.button-coral {
+  min-width: 204px;
+  background: var(--coral);
+  box-shadow: 0 16px 28px rgba(255, 90, 73, 0.22);
+}
+
+.button-coral:hover {
+  background: var(--coral-strong);
+}
+
+.button-secondary {
+  min-width: 196px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--accent);
+  border-color: rgba(0, 113, 79, 0.55);
+  box-shadow: none;
+}
+
+.button-secondary:hover {
+  background: #ffffff;
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+
+.button-success {
+  background: var(--success);
+}
+
+.button-danger {
+  background: var(--danger);
+}
+
+body.modal-open {
+  overflow: hidden;
+}

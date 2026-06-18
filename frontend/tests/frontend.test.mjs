@@ -48,6 +48,9 @@ import {
   galleryUrls,
 } from "../js/animal-gallery.js";
 import {
+  filterAndSortAdminAnimals,
+} from "../js/admin-animal-filters.js";
+import {
   adoptionStatusNotification,
   createNotificationCenter,
   showToast,
@@ -560,6 +563,48 @@ test("buildAnimalFormData appends normalized animal fields and uploaded image fi
   assert.equal(payload.getAll("imagens").length, 2);
   assert.equal(payload.getAll("imagens")[0].name, "mimi.png");
   assert.equal(payload.getAll("imagens")[1].name, "mimi.jpg");
+});
+
+test("filterAndSortAdminAnimals combines admin animal filters without mutating the source list", () => {
+  const animals = [
+    { id: 1, nome: "Thor", especie: "cao", porte: "grande", idadeMeses: 36, status: "disponivel", raca: "SRD", dataResgate: "2025-02-10" },
+    { id: 2, nome: "Mimi", especie: "gato", porte: "pequeno", idadeMeses: 8, status: "adotado", raca: "Siamês", dataResgate: "2025-03-11" },
+    { id: 3, nome: "Nina", especie: "gato", porte: "pequeno", idadeMeses: 15, status: "disponivel", raca: "SRD", dataResgate: "2025-04-12" },
+  ];
+
+  const filtered = filterAndSortAdminAnimals(animals, {
+    query: "srd",
+    status: "disponivel",
+    especie: "gato",
+    porte: "pequeno",
+    idade: "adulto",
+    ordem: "mais_recentes",
+  });
+
+  assert.notEqual(filtered, animals);
+  assert.deepEqual(filtered.map((animal) => animal.nome), ["Nina"]);
+  assert.deepEqual(animals.map((animal) => animal.nome), ["Thor", "Mimi", "Nina"]);
+});
+
+test("filterAndSortAdminAnimals supports age groups and admin sort orders", () => {
+  const animals = [
+    { id: 1, nome: "Zeca", especie: "cao", porte: "medio", idadeMeses: 120, status: "disponivel", dataResgate: "2025-01-01" },
+    { id: 2, nome: "Amora", especie: "cao", porte: "pequeno", idadeMeses: 6, status: "em_analise", dataResgate: "2025-05-01" },
+    { id: 3, nome: "Bento", especie: "cao", porte: "grande", idadeMeses: 30, status: "disponivel", dataResgate: "2025-03-01" },
+  ];
+
+  assert.deepEqual(
+    filterAndSortAdminAnimals(animals, { idade: "filhote", ordem: "nome_az" }).map((animal) => animal.nome),
+    ["Amora"]
+  );
+  assert.deepEqual(
+    filterAndSortAdminAnimals(animals, { idade: "senior", ordem: "idade_maior" }).map((animal) => animal.nome),
+    ["Zeca"]
+  );
+  assert.deepEqual(
+    filterAndSortAdminAnimals(animals, { ordem: "idade_menor" }).map((animal) => animal.nome),
+    ["Amora", "Bento", "Zeca"]
+  );
 });
 
 test("chooseAnimalImageUrl uses a registered animal image before calling random APIs", async () => {

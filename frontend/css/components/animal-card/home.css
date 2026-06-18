@@ -1,0 +1,280 @@
+.animal-card-home {
+  border-color: #dce7e1;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(17, 36, 29, 0.13);
+}
+
+.animal-card-home:hover {
+  border-color: rgba(0, 113, 79, 0.2);
+  box-shadow: 0 18px 38px rgba(17, 36, 29, 0.16);
+  transform: translateY(-3px);
+}
+
+.animal-card-home .animal-card-media {
+  height: 205px;
+  overflow: visible;
+  background: #e8eee9;
+}
+
+.animal-card-home .animal-card-image {
+  height: 100%;
+  border-radius: 13px 13px 0 0;
+}
+
+.animal-card-home:hover .animal-card-image {
+  transform: none;
+}
+
+.animal-card-home .animal-card-image-shade {
+  display: none;
+}
+
+.animal-card-home .score {
+  top: 14px;
+  left: 14px;
+  min-width: 98px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #007a55, #005c40);
+  color: #ffffff;
+  gap: 1px;
+  padding: 9px 10px 10px;
+  text-align: left;
+  box-shadow: 0 8px 18px rgba(12, 44, 33, 0.22);
+}
+
+.animal-card-home .score strong {
+  color: #ffffff;
+  font-size: 1.42rem;
+  font-weight: 900;
+}
+
+.animal-card-home .score span {
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.animal-card-home .favorite-toggle {
+  top: 14px;
+  right: 14px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(16, 34, 27, 0.14);
+  background: #ffffff;
+  color: #26342f;
+  backdrop-filter: none;
+  box-shadow: 0 4px 12px rgba(16, 34, 27, 0.16);
+  filter: none;
+}
+
+.animal-card-home .favorite-toggle .library-icon {
+  color: #26342f;
+  font-size: 1.7rem;
+  font-weight: 400;
+  transform: translateY(-1px);
+}
+
+.animal-card-home .favorite-toggle-active .library-icon {
+  color: #f2554a;
+}
+
+.animal-card-home .status-tag {
+  right: 16px;
+  bottom: -17px;
+  z-index: 2;
+  min-height: 34px;
+  border: 1px solid rgba(0, 113, 79, 0.12);
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 16px rgba(16, 34, 27, 0.12);
+  padding: 6px 15px;
+  font-size: 0.78rem;
+}
+
+.animal-card-home .animal-card-body {
+  gap: 0;
+  padding: 28px 0 14px;
+}
+
+.animal-card-home .animal-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px 10px;
+}
+
+.animal-card-home h3 {
+  color: #005c40;
+  font-size: 1.36rem;
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.animal-card-home .animal-card-meta,
+.animal-card-home .animal-card-age {
+  color: #6a7671;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.animal-card-home .animal-card-age {
+  margin-top: 1px;
+}
+
+.animal-size-tag {
+  min-height: 31px;
+  border-radius: 8px;
+  background: #e9f5ef;
+  color: #0d7655;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.animal-size-tag .library-icon {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.animal-card-home .animal-description {
+  margin: 0;
+  padding: 0 16px 14px;
+  color: #4f5f58;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.animal-card-home .care-pill-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-top: 1px solid #e4ebe7;
+  border-bottom: 1px solid #e4ebe7;
+}
+
+.animal-card-home .care-pill {
+  min-height: 75px;
+  border: 0;
+  border-right: 1px solid #e4ebe7;
+  border-bottom: 1px solid #e4ebe7;
+  border-radius: 0;
+  background: #ffffff;
+  justify-items: center;
+  padding: 9px 5px 8px;
+  text-align: center;
+}
+
+.animal-card-home .care-pill:nth-child(3n) {
+  border-right: 0;
+}
+
+.animal-card-home .care-pill:nth-child(n+4) {
+  border-bottom: 0;
+}
+
+.animal-card-home .care-pill-icon {
+  color: #087152;
+  display: grid;
+  place-items: center;
+}
+
+.animal-card-home .care-pill-icon .animal-icon {
+  width: 21px;
+  height: 21px;
+}
+
+.animal-card-home .care-pill-label {
+  color: #596a62;
+  font-size: 0.62rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.animal-card-home .care-pill-label::before {
+  content: none;
+}
+
+.animal-card-home .care-pill-value {
+  color: #24352e;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.animal-card-home .animal-environment {
+  border-width: 0 0 1px;
+  border-color: #e4ebe7;
+  border-radius: 0;
+  background: #ffffff;
+  gap: 9px;
+  padding: 11px 16px 12px;
+}
+
+.animal-card-home .animal-environment-icon {
+  color: #087152;
+}
+
+.animal-card-home .animal-environment-icon .animal-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.animal-card-home .animal-environment span {
+  color: #66756f;
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.animal-card-home .animal-environment strong {
+  color: #29372f;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.animal-card-home .card-actions {
+  grid-template-columns: minmax(0, 1fr) 56px;
+  gap: 10px;
+  margin-top: auto;
+  padding: 14px 16px 0;
+}
+
+.animal-card-home .button-card {
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  background: #007a55;
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.animal-card-home .button-save-icon-only {
+  width: 56px;
+  min-width: 56px;
+  min-height: 46px;
+  border: 1.5px solid #0f7657;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #f2554a;
+  justify-content: center;
+  padding: 0;
+}
+
+.animal-card-home .button-save-icon-only.button-save-active {
+  background: #fff6f5;
+  border-color: #efbbb5;
+  color: #f2554a;
+}
+
+.animal-card-home .button-save-icon .library-icon {
+  font-size: 1.6rem;
+  font-weight: 400;
+}
