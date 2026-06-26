@@ -1,10 +1,11 @@
 import { api } from "../api.js";
+import { showAdoptionSuccessModal } from "../adoption-success-modal.js";
 import { galleryUrls } from "../animal-gallery.js";
 import { buildSolicitacaoPayload } from "../forms.js";
 import { applyFavoriteButtonState, loadFavoriteIds, toggleFavorite } from "../favorites.js";
 import { createHeaderAuthController } from "../header-auth.js";
 import { createIcon } from "../icons.js";
-import { readAuthenticatedAdotanteId, saveLastSolicitacao } from "../state.js";
+import { readAuthenticatedAdotanteId } from "../state.js";
 import { $, clearNode, element, formatAge, formatBoolean, formatEnum, renderAnimalImage, setFeedback } from "../ui.js";
 
 const detail = $("#animal-detail");
@@ -337,13 +338,17 @@ action?.addEventListener("click", async () => {
   }
 
   setFeedback(feedback, "Registrando solicitacao...");
+  action.disabled = true;
 
   try {
     const payload = buildSolicitacaoPayload(animalId, adotanteId);
     const solicitacao = await api.post("/adocoes", payload);
-    saveLastSolicitacao(sessionStorage, solicitacao);
-    window.location.href = `confirmacao.html?solicitacaoId=${solicitacao.id}`;
+    clearNode(action);
+    action.append(adoptIcon(), "Solicitação enviada");
+    setFeedback(feedback, "");
+    showAdoptionSuccessModal(solicitacao);
   } catch (error) {
+    action.disabled = loadedAnimal?.status === "adotado";
     setFeedback(feedback, error.message, "error");
   }
 });

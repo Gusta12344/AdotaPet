@@ -21,6 +21,18 @@ export function fetchModeracaoFila(filters = {}, apiClient = api) {
   return apiClient.get(`${BASE}/solicitacoes${query ? `?${query}` : ""}`, { auth: true });
 }
 
+export function fetchModeracaoSolicitacoesLista(filters = {}, apiClient = api) {
+  const params = new URLSearchParams();
+  for (const key of ["status", "atencao", "especie", "perfil", "q", "ordem", "pagina", "tamanho"]) {
+    const value = filters[key];
+    if (value !== undefined && value !== null && String(value) !== "") {
+      params.set(key, String(value));
+    }
+  }
+  const query = params.toString();
+  return apiClient.get(`${BASE}/solicitacoes/lista${query ? `?${query}` : ""}`, { auth: true });
+}
+
 export function fetchModeracaoDetalhe(id, apiClient = api) {
   return apiClient.get(`${BASE}/solicitacoes/${id}`, { auth: true });
 }
@@ -35,4 +47,16 @@ export function salvarModeracaoChecklist(id, payload, apiClient = api) {
 
 export function decidirModeracaoSolicitacao(id, payload, apiClient = api) {
   return apiClient.post(`${BASE}/solicitacoes/${id}/decisao`, payload, { auth: true });
+}
+
+export function finalizarModeracaoSolicitacao(id, payload, apiClient = api) {
+  return apiClient.post(`${BASE}/solicitacoes/${id}/finalizacao`, payload, { auth: true });
+}
+
+export function reverterFinalizacaoModeracaoSolicitacao(id, payload, apiClient = api) {
+  return apiClient.post(`${BASE}/solicitacoes/${id}/reversao-finalizacao`, payload, { auth: true });
+}
+
+export function excluirModeracaoSolicitacao(id, apiClient = api) {
+  return apiClient.delete(`${BASE}/solicitacoes/${id}`, { auth: true });
 }

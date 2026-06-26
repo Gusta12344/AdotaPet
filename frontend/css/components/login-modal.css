@@ -155,3 +155,246 @@
   color: var(--accent-strong);
   text-decoration: underline;
 }
+
+.requests-dialog {
+  width: min(100%, 640px);
+}
+
+.requests-mark {
+  background: var(--coral);
+  box-shadow: 0 16px 30px rgba(255, 90, 73, 0.2);
+}
+
+.requests-feedback {
+  min-height: 20px;
+  margin: 0 0 12px;
+  color: var(--muted-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.requests-list {
+  display: grid;
+  gap: 10px;
+  max-height: min(430px, calc(100vh - 260px));
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.request-item {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(0, 113, 79, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.84);
+  padding: 16px;
+}
+
+.request-item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.request-item-title {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.request-item-title strong {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.request-item-title span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.request-item-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.request-item-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.request-cancel-button {
+  min-height: 38px;
+  min-width: 0;
+  border-color: rgba(198, 69, 59, 0.28);
+  color: var(--danger);
+  padding: 8px 13px;
+  font-size: 0.82rem;
+  box-shadow: none;
+}
+
+.request-cancel-button:hover {
+  border-color: rgba(198, 69, 59, 0.46);
+  color: var(--danger);
+}
+
+.request-item-detail {
+  display: grid;
+  gap: 3px;
+}
+
+.request-item-detail dt {
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.request-item-detail dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.requests-status {
+  min-height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  font-size: 0.76rem;
+  font-weight: 950;
+}
+
+.requests-status-pending {
+  background: rgba(240, 172, 61, 0.14);
+  color: #8a5a09;
+}
+
+.requests-status-analysis {
+  background: rgba(0, 113, 79, 0.12);
+  color: var(--accent);
+}
+
+.requests-status-approved,
+.requests-status-finished {
+  background: rgba(54, 155, 112, 0.14);
+  color: var(--success);
+}
+
+.requests-status-rejected {
+  background: rgba(198, 69, 59, 0.12);
+  color: var(--danger);
+}
+
+.requests-status-canceled {
+  background: rgba(84, 96, 91, 0.12);
+  color: var(--muted-strong);
+}
+
+.requests-status-neutral {
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+}
+
+.requests-empty {
+  margin: 0;
+  border: 1px dashed rgba(0, 113, 79, 0.22);
+  border-radius: 8px;
+  background: rgba(225, 244, 235, 0.42);
+  color: var(--muted-strong);
+  padding: 18px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.adoption-success-dialog {
+  width: min(100%, 540px);
+}
+
+.adoption-success-mark {
+  background: var(--success);
+  box-shadow: 0 16px 30px rgba(54, 155, 112, 0.2);
+}
+
+.adoption-success-heading {
+  margin-bottom: 16px;
+}
+
+.adoption-success-heading .overline {
+  margin: 0 0 8px;
+  color: var(--success);
+  font-size: 0.76rem;
+}
+
+.adoption-success-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.adoption-success-detail {
+  border: 1px solid rgba(0, 113, 79, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 12px;
+}
+
+.adoption-success-detail dt {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.adoption-success-detail dd {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.adoption-success-note {
+  margin: 0 0 18px;
+  color: var(--muted-strong);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.adoption-success-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .request-item-header,
+  .request-item-details {
+    grid-template-columns: 1fr;
+  }
+
+  .request-item-header {
+    display: grid;
+  }
+
+  .requests-status {
+    justify-self: start;
+  }
+
+  .adoption-success-details {
+    grid-template-columns: 1fr;
+  }
+
+  .adoption-success-actions .button {
+    width: 100%;
+  }
+}

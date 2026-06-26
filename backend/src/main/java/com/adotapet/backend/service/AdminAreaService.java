@@ -2,10 +2,13 @@ package com.adotapet.backend.service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +21,7 @@ import com.adotapet.backend.dto.AdminOverviewResponse;
 import com.adotapet.backend.dto.AdminRelatorioResponse;
 import com.adotapet.backend.dto.AdminUsuarioCreateRequest;
 import com.adotapet.backend.dto.AdminUsuarioResponse;
+import com.adotapet.backend.dto.AdminUsuarioUpdateRequest;
 import com.adotapet.backend.dto.AnimalResponse;
 import com.adotapet.backend.dto.NotificacaoResponse;
 import com.adotapet.backend.model.Admin;
@@ -29,8 +33,10 @@ import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.repository.AdminRepository;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
+import com.adotapet.backend.repository.FavoritoAnimalRepository;
 import com.adotapet.backend.repository.NotificacaoRepository;
 import com.adotapet.backend.repository.SolicitacaoAdocaoRepository;
+import com.adotapet.backend.repository.SolicitacaoModeracaoEventoRepository;
 
 @Service
 public class AdminAreaService {
@@ -41,6 +47,8 @@ public class AdminAreaService {
     private final AdotanteRepository adotanteRepository;
     private final AdminRepository adminRepository;
     private final SolicitacaoAdocaoRepository solicitacaoRepository;
+    private final SolicitacaoModeracaoEventoRepository solicitacaoEventoRepository;
+    private final FavoritoAnimalRepository favoritoAnimalRepository;
     private final NotificacaoRepository notificacaoRepository;
     private final NotificacaoService notificacaoService;
     private final PasswordEncoder passwordEncoder;
@@ -48,12 +56,15 @@ public class AdminAreaService {
 
     public AdminAreaService(AnimalRepository animalRepository, AdotanteRepository adotanteRepository,
             AdminRepository adminRepository, SolicitacaoAdocaoRepository solicitacaoRepository,
-            NotificacaoRepository notificacaoRepository, NotificacaoService notificacaoService,
-            PasswordEncoder passwordEncoder) {
+            SolicitacaoModeracaoEventoRepository solicitacaoEventoRepository,
+            FavoritoAnimalRepository favoritoAnimalRepository, NotificacaoRepository notificacaoRepository,
+            NotificacaoService notificacaoService, PasswordEncoder passwordEncoder) {
         this.animalRepository = animalRepository;
         this.adotanteRepository = adotanteRepository;
         this.adminRepository = adminRepository;
         this.solicitacaoRepository = solicitacaoRepository;
+        this.solicitacaoEventoRepository = solicitacaoEventoRepository;
+        this.favoritoAnimalRepository = favoritoAnimalRepository;
         this.notificacaoRepository = notificacaoRepository;
         this.notificacaoService = notificacaoService;
         this.passwordEncoder = passwordEncoder;
@@ -86,11 +97,26 @@ public class AdminAreaService {
 
     @Transactional(readOnly = true)
     public List<AdminUsuarioResponse> listarUsuarios() {
-        Map<String, Admin> admins = adminsPorIdentidade();
-        return adotanteRepository.findAllByOrderByDataCadastroDesc()
-                .stream()
-                .map(adotante -> AdminUsuarioResponse.fromEntity(adotante, localizarAdmin(adotante, admins)))
-                .toList();
+        List<Admin> admins = adminRepository.findAll();
+        Map<String, Admin> adminsPorIdentidade = adminsPorIdentidade(admins);
+        Set<Integer> adminsVinculados = new HashSet<>();
+        List<AdminUsuarioResponse> usuarios = new ArrayList<>();
+
+        for (Adotante adotante : adotanteRepository.findAllByOrderByDataCadastroDesc()) {
+            Admin admin = localizarAdmin(adotante, adminsPorIdentidade);
+            if (admin != null) {
+                adminsVinculados.add(admin.getId());
+            }
+            usuarios.add(AdminUsuarioResponse.fromEntity(adotante, admin));
+        }
+
+        for (Admin admin : admins) {
+            if (!adminsVinculados.contains(admin.getId())) {
+                usuarios.add(AdminUsuarioResponse.fromAdmin(admin));
+            }
+        }
+
+        return usuarios;
     }
 
     @Transactional(readOnly = true)
@@ -145,6 +171,100 @@ public class AdminAreaService {
     }
 
     @Transactional
+    public AdminUsuarioResponse atualizarUsuario(Integer adotanteId, AdminUsuarioUpdateRequest request) {
+        Adotante adotante = adotanteRepository.findById(adotanteId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Adotante nao encontrado"));
+        Admin adminAtual = localizarAdmin(adotante);
+        String nome = normalizeText(request.nome());
+        String cpf = normalizeText(request.cpf());
+        String email = normalizeEmail(request.email());
+        String senha = normalizePassword(request.senha());
+
+        validarSenhaOpcional(senha);
+        validarAdotanteUnicoParaAtualizacao(adotanteId, email, cpf);
+        if (request.administrador()) {
+            validarAdminUnicoParaAtualizacao(adminAtual, email, cpf);
+        }
+
+        if (!senha.isBlank()) {
+            adotante.setSenha(passwordEncoder.encode(senha));
+        }
+        adotante.setNome(nome);
+        adotante.setCpf(cpf);
+        adotante.setEmail(email);
+        adotante.setTelefone(normalizeText(request.telefone()));
+        adotante.setEndereco(normalizeText(request.endereco()));
+        adotante.setTipoMoradia(request.tipoMoradia());
+        adotante.setTemCriancas(request.temCriancas());
+        adotante.setTemOutrosAnimais(request.temOutrosAnimais());
+        adotante.setNivelAtividade(request.nivelAtividade());
+        adotante.setPreferenciaPorte(request.preferenciaPorte());
+        adotante.setPreferenciaEspecie(request.preferenciaEspecie());
+
+        Admin admin = null;
+        if (request.administrador()) {
+            admin = adminAtual == null ? new Admin() : adminAtual;
+            admin.setNome(nome);
+            admin.setCpf(cpf);
+            admin.setEmail(email);
+            admin.setSenha(adotante.getSenha());
+            if (admin.getId() == null) {
+                admin = adminRepository.save(admin);
+            }
+        } else if (adminAtual != null) {
+            adminRepository.delete(adminAtual);
+        }
+
+        return AdminUsuarioResponse.fromEntity(adotante, admin);
+    }
+
+    @Transactional
+    public void excluirUsuario(Integer adotanteId) {
+        Adotante adotante = adotanteRepository.findById(adotanteId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Adotante nao encontrado"));
+        Admin admin = localizarAdmin(adotante);
+
+        if (admin != null) {
+            adminRepository.delete(admin);
+        }
+        solicitacaoEventoRepository.deleteBySolicitacaoAdotanteId(adotanteId);
+        solicitacaoRepository.deleteByAdotanteId(adotanteId);
+        favoritoAnimalRepository.deleteByAdotanteId(adotanteId);
+        notificacaoRepository.deleteByAdotanteId(adotanteId);
+        adotanteRepository.delete(adotante);
+    }
+
+    @Transactional
+    public AdminUsuarioResponse atualizarAdministrador(Integer adminId, AdminUsuarioUpdateRequest request) {
+        Admin admin = adminRepository.findById(adminId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Administrador nao encontrado"));
+        String nome = normalizeText(request.nome());
+        String cpf = normalizeText(request.cpf());
+        String email = normalizeEmail(request.email());
+        String senha = normalizePassword(request.senha());
+
+        validarSenhaOpcional(senha);
+        validarAdotanteLivreParaAdmin(email, cpf);
+        validarAdminUnicoParaAtualizacao(admin, email, cpf);
+
+        admin.setNome(nome);
+        admin.setCpf(cpf);
+        admin.setEmail(email);
+        if (!senha.isBlank()) {
+            admin.setSenha(passwordEncoder.encode(senha));
+        }
+
+        return AdminUsuarioResponse.fromAdmin(admin);
+    }
+
+    @Transactional
+    public void excluirAdministrador(Integer adminId) {
+        Admin admin = adminRepository.findById(adminId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Administrador nao encontrado"));
+        adminRepository.delete(admin);
+    }
+
+    @Transactional
     public NotificacaoResponse enviarMensagem(AdminMensagemRequest request) {
         Adotante adotante = adotanteRepository.findById(request.adotanteId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Adotante nao encontrado"));
@@ -190,6 +310,32 @@ public class AdminAreaService {
         return adminRepository.save(admin);
     }
 
+    private void validarAdotanteUnicoParaAtualizacao(Integer adotanteId, String email, String cpf) {
+        adotanteRepository.findByEmail(email)
+                .filter(adotante -> !adotante.getId().equals(adotanteId))
+                .ifPresent(adotante -> {
+                    throw new RegraNegocioException("Ja existe usuario cadastrado com este e-mail");
+                });
+        adotanteRepository.findByCpf(cpf)
+                .filter(adotante -> !adotante.getId().equals(adotanteId))
+                .ifPresent(adotante -> {
+                    throw new RegraNegocioException("Ja existe usuario cadastrado com este CPF");
+                });
+    }
+
+    private void validarAdminUnicoParaAtualizacao(Admin adminAtual, String email, String cpf) {
+        adminRepository.findByEmail(normalizeEmail(email))
+                .filter(admin -> adminAtual == null || !admin.getId().equals(adminAtual.getId()))
+                .ifPresent(admin -> {
+                    throw new RegraNegocioException("Usuario ja e administrador");
+                });
+        adminRepository.findByCpf(normalizeText(cpf))
+                .filter(admin -> adminAtual == null || !admin.getId().equals(adminAtual.getId()))
+                .ifPresent(admin -> {
+                    throw new RegraNegocioException("Usuario ja e administrador");
+                });
+    }
+
     private void validarAdotanteUnico(String email, String cpf) {
         if (adotanteRepository.existsByEmail(email)) {
             throw new RegraNegocioException("Ja existe usuario cadastrado com este e-mail");
@@ -208,13 +354,22 @@ public class AdminAreaService {
         });
     }
 
-    private Map<String, Admin> adminsPorIdentidade() {
+    private Map<String, Admin> adminsPorIdentidade(List<Admin> adminsOrigem) {
         Map<String, Admin> admins = new HashMap<>();
-        for (Admin admin : adminRepository.findAll()) {
+        for (Admin admin : adminsOrigem) {
             admins.put(identityKey(admin.getEmail()), admin);
             admins.put(identityKey(admin.getCpf()), admin);
         }
         return admins;
+    }
+
+    private void validarAdotanteLivreParaAdmin(String email, String cpf) {
+        adotanteRepository.findByEmail(email).ifPresent(adotante -> {
+            throw new RegraNegocioException("Ja existe usuario cadastrado com este e-mail");
+        });
+        adotanteRepository.findByCpf(cpf).ifPresent(adotante -> {
+            throw new RegraNegocioException("Ja existe usuario cadastrado com este CPF");
+        });
     }
 
     private Admin localizarAdmin(Adotante adotante, Map<String, Admin> admins) {
@@ -223,6 +378,12 @@ public class AdminAreaService {
             return byEmail;
         }
         return admins.get(identityKey(adotante.getCpf()));
+    }
+
+    private Admin localizarAdmin(Adotante adotante) {
+        return adminRepository.findByEmail(normalizeEmail(adotante.getEmail()))
+                .or(() -> adminRepository.findByCpf(normalizeText(adotante.getCpf())))
+                .orElse(null);
     }
 
     private String buildCsvReport(AdminOverviewResponse resumo, List<AnimalResponse> animais,
@@ -344,6 +505,12 @@ public class AdminAreaService {
     private static void validarSenha(String senha) {
         if (senha.length() < 6 || senha.length() > 72) {
             throw new RegraNegocioException("A senha deve ter entre 6 e 72 caracteres");
+        }
+    }
+
+    private static void validarSenhaOpcional(String senha) {
+        if (!senha.isBlank()) {
+            validarSenha(senha);
         }
     }
 

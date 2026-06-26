@@ -12,6 +12,7 @@ import {
 } from "../js/admin-moderacao-state.js";
 import {
   fetchModeracaoFila,
+  fetchModeracaoSolicitacoesLista,
 } from "../js/admin-moderacao-api.js";
 import {
   renderModeracaoDecision,
@@ -303,22 +304,20 @@ test("buildDecisaoPayload gera payload esperado", () => {
     dadosAdotanteConferidos: true,
     animalDisponivelConferido: true,
     contatoRevisado: true,
+    observacaoAdmin: "  Pode seguir  ",
   }), {
     status: "aprovada",
-    dadosAdotanteConferidos: true,
-    animalDisponivelConferido: true,
-    contatoRevisado: true,
-    observacaoAdmin: "",
+    observacaoAdmin: "Pode seguir",
   });
 });
 
-test("canApproveSolicitacao exige checklist completo e permissao da API", () => {
+test("canApproveSolicitacao depende apenas da permissao da API", () => {
   assert.equal(canApproveSolicitacao(detalheFixture), true);
   assert.equal(canApproveSolicitacao({ ...detalheFixture, podeAprovar: false }), false);
   assert.equal(canApproveSolicitacao({
     ...detalheFixture,
     checklist: { ...detalheFixture.checklist, contatoRevisado: false },
-  }), false);
+  }), true);
 });
 
 test("fetchModeracaoFila usa endpoint administrativo com filtros", async () => {
@@ -331,6 +330,31 @@ test("fetchModeracaoFila usa endpoint administrativo com filtros", async () => {
   });
 
   assert.equal(calls[0].path, "/admin/moderacao/solicitacoes?status=pendente&q=luna&ordem=mais_antigas");
+  assert.equal(calls[0].options.auth, true);
+});
+
+test("fetchModeracaoSolicitacoesLista usa endpoint paginado com filtros de atencao", async () => {
+  const calls = [];
+  await fetchModeracaoSolicitacoesLista({
+    status: "pendente",
+    atencao: "alta",
+    especie: "cao",
+    perfil: "com_fila",
+    q: "thor",
+    ordem: "atencao",
+    pagina: 1,
+    tamanho: 10,
+  }, {
+    async get(path, options) {
+      calls.push({ path, options });
+      return { itens: [] };
+    },
+  });
+
+  assert.equal(
+    calls[0].path,
+    "/admin/moderacao/solicitacoes/lista?status=pendente&atencao=alta&especie=cao&perfil=com_fila&q=thor&ordem=atencao&pagina=1&tamanho=10"
+  );
   assert.equal(calls[0].options.auth, true);
 });
 
@@ -455,7 +479,7 @@ test("renderizacao usa fallback compartilhado quando o animal ainda nao tem uplo
   assert.equal(image.getAttribute("alt"), "Foto de Luna");
 });
 
-test("painel de decisao desabilita aprovar quando checklist esta incompleto", () => {
+test("painel de decisao permite aprovar mesmo sem checklist completo", () => {
   const target = withDocument(() => {
     const node = new TestElement("aside");
     renderModeracaoDecision(node, {
@@ -466,5 +490,5 @@ test("painel de decisao desabilita aprovar quando checklist esta incompleto", ()
   });
 
   const approveButton = target.querySelector(".moderation-approve-button");
-  assert.equal(approveButton.disabled, true);
+  assert.equal(approveButton.disabled, undefined);
 });

@@ -48,6 +48,7 @@ export function formatCpfForLogin(value) {
 export function createHeaderAuthController({
   root = document,
   storage = globalThis.sessionStorage || createMemoryStorage(),
+  apiClient = api,
   onLogin = null,
   onLogout = null,
 } = {}) {
@@ -69,10 +70,16 @@ export function createHeaderAuthController({
   const modalSubtitle = query(root, "[data-login-subtitle]");
   const modalSubmitText = query(root, "[data-login-submit-text]");
   const closeButtons = queryAll(root, "[data-login-close]");
+  const myRequestsButton = query(root, "[data-my-requests]");
+  const requestsModal = query(root, "[data-requests-modal]");
+  const requestsList = query(root, "[data-requests-list]");
+  const requestsFeedback = query(root, "[data-requests-feedback]");
+  const requestsCloseButtons = queryAll(root, "[data-requests-close]");
   const notificationCenter = createNotificationCenter({
     root,
     storage: globalThis.localStorage || createMemoryStorage(),
   });
+  let currentRequests = [];
 
   function render() {
     const user = readCurrentUser(storage);
@@ -127,7 +134,7 @@ export function createHeaderAuthController({
     setText(modalSubmitText, mode === "edit" ? "Confirmar" : "Entrar");
 
     modal.hidden = false;
-    root.body?.classList.add("modal-open");
+    syncModalOpenState();
     globalThis.requestAnimationFrame?.(() => cpfInput?.focus());
   }
 
@@ -137,8 +144,8 @@ export function createHeaderAuthController({
     }
 
     modal.hidden = true;
-    root.body?.classList.remove("modal-open");
     setText(loginFeedback, "");
+    syncModalOpenState();
   }
 
   async function submitLogin(event) {
@@ -149,7 +156,7 @@ export function createHeaderAuthController({
     const senha = String(formData.get("senha") || "").trim();
 
     try {
-      const response = await api.post("/auth/login", { cpf, senha });
+      const response = await apiClient.post("/auth/login", { cpf, senha });
       if (!response.autenticado) {
         throw new Error(response.mensagem || "CPF ou senha invalidos");
       }
@@ -203,12 +210,47 @@ export function createHeaderAuthController({
     accountTrigger?.setAttribute("aria-expanded", "false");
   }
 
+  async function openRequestsModal() {
+    const currentUser = readCurrentUser(storage);
+    if (!currentUser || currentUser.tipo !== "adotante") {
+      openLoginModal();
+      return;
+    }
+
+    closeAccountMenu();
+    if (!requestsModal || !requestsList) {
+      return;
+    }
+
+    requestsModal.hidden = false;
+    syncModalOpenState();
+    renderRequestsLoading();
+
+    try {
+      const requests = await apiClient.get(`/adocoes/adotantes/${currentUser.id}`);
+      renderRequests(requests);
+    } catch {
+      renderRequestsError();
+    }
+  }
+
+  function closeRequestsModal() {
+    if (!requestsModal) {
+      return;
+    }
+
+    requestsModal.hidden = true;
+    setText(requestsFeedback, "");
+    syncModalOpenState();
+  }
+
   function logout() {
     clearCurrentUser(storage);
     clearAdminCredentials(storage);
     clearAdotanteIdIfAvailable();
     closeAccountMenu();
     closeLoginModal();
+    closeRequestsModal();
     notificationCenter.clear();
     onLogout?.();
     render();
@@ -227,6 +269,7 @@ export function createHeaderAuthController({
   loginButton?.addEventListener("click", () => openLoginModal());
   privateActions.forEach((action) => action.addEventListener("click", requireLoggedUser));
   closeButtons.forEach((button) => button.addEventListener("click", closeLoginModal));
+  requestsCloseButtons.forEach((button) => button.addEventListener("click", closeRequestsModal));
   loginForm?.addEventListener("submit", submitLogin);
   if (loginForm) {
     getFormControl(loginForm, "cpf")?.addEventListener("input", (event) => {
@@ -242,6 +285,9 @@ export function createHeaderAuthController({
     closeAccountMenu();
     window.location.href = "editar-dados.html";
   });
+  myRequestsButton?.addEventListener("click", () => {
+    void openRequestsModal();
+  });
   logoutButton?.addEventListener("click", logout);
   root.addEventListener?.("click", closeAccountMenu);
   root.addEventListener?.("keydown", (event) => {
@@ -251,6 +297,7 @@ export function createHeaderAuthController({
 
     closeAccountMenu();
     closeLoginModal();
+    closeRequestsModal();
   });
 
   render();
@@ -259,9 +306,141 @@ export function createHeaderAuthController({
     render,
     openLoginModal,
     closeLoginModal,
+    openRequestsModal,
+    closeRequestsModal,
     logout,
     toggleAccountMenu,
   };
+
+  function syncModalOpenState() {
+    const isOpen = Boolean((modal && !modal.hidden) || (requestsModal && !requestsModal.hidden));
+    root.body?.classList.toggle("modal-open", isOpen);
+  }
+
+  function renderRequestsLoading() {
+    setText(requestsFeedback, "Carregando solicitações...");
+    clearNode(requestsList);
+  }
+
+  function renderRequestsError() {
+    setText(requestsFeedback, "Não foi possível carregar suas solicitações.");
+    currentRequests = [];
+    clearNode(requestsList);
+  }
+
+  function renderRequests(requests) {
+    const normalizedRequests = Array.isArray(requests) ? requests : [];
+    currentRequests = normalizedRequests;
+    setText(requestsFeedback, "");
+    clearNode(requestsList);
+
+    if (!normalizedRequests.length) {
+      requestsList.append(createRequestsEmptyState());
+      return;
+    }
+
+    for (const request of normalizedRequests) {
+      requestsList.append(createRequestItem(request));
+    }
+  }
+
+  function createRequestsEmptyState() {
+    return createNode("p", {
+      className: "requests-empty",
+      text: "Você ainda não enviou solicitações de adoção.",
+    });
+  }
+
+  function createRequestItem(request) {
+    const status = requestStatus(request?.status);
+    const item = createNode("article", { className: "request-item" });
+    const header = createNode("div", { className: "request-item-header" });
+    const titleGroup = createNode("div", { className: "request-item-title" }, [
+      createNode("strong", { text: request?.animalNome || "Animal" }),
+      createNode("span", { text: request?.id ? `Solicitação #${request.id}` : "Solicitação" }),
+    ]);
+    const statusPill = createNode("span", {
+      className: `requests-status requests-status-${status.tone}`,
+      text: status.label,
+    });
+    const details = createNode("dl", { className: "request-item-details" }, [
+      createRequestDetail("Enviada em", formatRequestDate(request?.dataSolicitacao)),
+      createRequestDetail("Status", status.label),
+    ]);
+
+    header.append(titleGroup, statusPill);
+    item.append(header, details);
+    if (isCancelableRequest(request)) {
+      item.append(createRequestActions(request));
+    }
+    return item;
+  }
+
+  function createRequestActions(request) {
+    const cancelButton = createNode("button", {
+      className: "button button-secondary request-cancel-button",
+      text: "Cancelar solicitação",
+      attrs: {
+        type: "button",
+        "data-request-cancel": String(request.id),
+      },
+    });
+    cancelButton.addEventListener("click", () => {
+      void cancelRequest(request, cancelButton);
+    });
+
+    return createNode("div", { className: "request-item-actions" }, [cancelButton]);
+  }
+
+  async function cancelRequest(request, button) {
+    const currentUser = readCurrentUser(storage);
+    if (!currentUser || currentUser.tipo !== "adotante" || !request?.id) {
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Cancelando...";
+    setText(requestsFeedback, "");
+
+    try {
+      const canceledRequest = await apiClient.post(`/adocoes/${request.id}/cancelamento`, {
+        adotanteId: currentUser.id,
+      });
+      currentRequests = currentRequests.map((item) => (
+        Number(item?.id) === Number(canceledRequest?.id) ? canceledRequest : item
+      ));
+      renderRequests(currentRequests);
+      setText(requestsFeedback, "Solicitação cancelada.");
+    } catch {
+      button.disabled = false;
+      button.textContent = "Cancelar solicitação";
+      setText(requestsFeedback, "Não foi possível cancelar esta solicitação.");
+    }
+  }
+
+  function createRequestDetail(label, value) {
+    return createNode("div", { className: "request-item-detail" }, [
+      createNode("dt", { text: label }),
+      createNode("dd", { text: value || "-" }),
+    ]);
+  }
+
+  function createNode(tagName, options = {}, children = []) {
+    const documentRef = requestsModal?.ownerDocument || root;
+    const node = documentRef.createElement(tagName);
+
+    if (options.className) {
+      node.className = options.className;
+    }
+    if (options.text) {
+      node.textContent = options.text;
+    }
+    for (const [name, value] of Object.entries(options.attrs || {})) {
+      node.setAttribute(name, String(value));
+    }
+    node.append(...children);
+    return node;
+  }
 }
 
 function setHidden(node, hidden) {
@@ -274,6 +453,46 @@ function setText(node, text) {
   if (node) {
     node.textContent = text;
   }
+}
+
+function clearNode(node) {
+  while (node?.firstChild) {
+    node.removeChild(node.firstChild);
+  }
+}
+
+function requestStatus(status) {
+  const normalized = String(status || "").toLowerCase();
+  const statuses = {
+    pendente: { label: "Pendente", tone: "pending" },
+    em_analise: { label: "Em análise", tone: "analysis" },
+    aprovada: { label: "Aprovada", tone: "approved" },
+    recusada: { label: "Recusada", tone: "rejected" },
+    cancelada: { label: "Cancelada", tone: "canceled" },
+    finalizada: { label: "Finalizada", tone: "finished" },
+  };
+
+  return statuses[normalized] || { label: "Status indisponível", tone: "neutral" };
+}
+
+function isCancelableRequest(request) {
+  return ["pendente", "em_analise"].includes(String(request?.status || "").toLowerCase());
+}
+
+function formatRequestDate(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function query(root, selector) {

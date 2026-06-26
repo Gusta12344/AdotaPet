@@ -1,6 +1,7 @@
 package com.adotapet.backend.service;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,15 +53,13 @@ public class SolicitacaoAdocaoService {
         }
         if (solicitacaoRepository.existsByAnimalIdAndAdotanteIdAndStatusIn(
                 animal.getId(), adotante.getId(), List.of(StatusSolicitacao.pendente, StatusSolicitacao.em_analise))) {
-            throw new RegraNegocioException("Este adotante ja esta na fila deste animal");
+            throw new RegraNegocioException("Você já está na fila de adoção para esse animal, aguarde!");
         }
 
         SolicitacaoAdocao solicitacao = new SolicitacaoAdocao();
         solicitacao.setAnimal(animal);
         solicitacao.setAdotante(adotante);
         solicitacao.setStatus(StatusSolicitacao.pendente);
-
-        animal.setStatus(StatusAnimal.em_analise);
 
         SolicitacaoAdocao salva = solicitacaoRepository.save(solicitacao);
         registrarEvento(salva, TipoEventoModeracao.solicitacao_enviada, "Solicitacao enviada pelo adotante.");
@@ -103,7 +102,7 @@ public class SolicitacaoAdocaoService {
         if (!isAtiva(solicitacao.getStatus())) {
             throw new RegraNegocioException("Somente solicitacoes ativas podem ser processadas");
         }
-        if (novoStatus == StatusSolicitacao.pendente || novoStatus == StatusSolicitacao.em_analise) {
+        if (novoStatus != StatusSolicitacao.aprovada && novoStatus != StatusSolicitacao.recusada) {
             throw new RegraNegocioException("Informe aprovada ou recusada para processar a solicitacao");
         }
 
@@ -118,11 +117,32 @@ public class SolicitacaoAdocaoService {
         return SolicitacaoResponse.fromEntity(solicitacao);
     }
 
+    @Transactional
+    public SolicitacaoResponse cancelar(Integer id, Integer adotanteId) {
+        SolicitacaoAdocao solicitacao = solicitacaoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Solicitacao nao encontrada"));
+
+        if (!Objects.equals(solicitacao.getAdotante().getId(), adotanteId)) {
+            throw new RegraNegocioException("Solicitacao nao pertence ao adotante informado");
+        }
+        if (!isAtiva(solicitacao.getStatus())) {
+            throw new RegraNegocioException("Somente solicitacoes ativas podem ser canceladas");
+        }
+
+        solicitacao.setStatus(StatusSolicitacao.cancelada);
+        solicitacao.setDataDecisao(java.time.LocalDateTime.now());
+        atualizarAnimalDepoisDeEncerrarSolicitacao(solicitacao);
+        registrarEvento(solicitacao, TipoEventoModeracao.solicitacao_cancelada, "Solicitacao cancelada pelo adotante.");
+
+        solicitacao.getAnimal().getNome();
+        solicitacao.getAdotante().getNome();
+        return SolicitacaoResponse.fromEntity(solicitacao);
+    }
+
     private void aprovar(SolicitacaoAdocao solicitacao) {
         Animal animal = solicitacao.getAnimal();
         solicitacao.setStatus(StatusSolicitacao.aprovada);
         solicitacao.setDataDecisao(java.time.LocalDateTime.now());
-        animal.setStatus(StatusAnimal.adotado);
         notificacaoService.criar(solicitacao.getAdotante(), TipoNotificacao.adocao, "Solicitacao aprovada",
                 "Sua solicitacao para adotar " + animal.getNome() + " foi aprovada.",
                 "solicitacao_adocao", solicitacao.getId());
@@ -146,15 +166,20 @@ public class SolicitacaoAdocaoService {
     private void recusar(SolicitacaoAdocao solicitacao) {
         solicitacao.setStatus(StatusSolicitacao.recusada);
         solicitacao.setDataDecisao(java.time.LocalDateTime.now());
-        boolean temOutrasAtivas = solicitacaoRepository.findByAnimalIdAndStatusInOrderByDataSolicitacaoAsc(
-                solicitacao.getAnimal().getId(), List.of(StatusSolicitacao.pendente, StatusSolicitacao.em_analise))
-                .stream()
-                .anyMatch(outra -> !outra.getId().equals(solicitacao.getId()));
-        solicitacao.getAnimal().setStatus(temOutrasAtivas ? StatusAnimal.em_analise : StatusAnimal.disponivel);
+        atualizarAnimalDepoisDeEncerrarSolicitacao(solicitacao);
         notificacaoService.criar(solicitacao.getAdotante(), TipoNotificacao.adocao, "Solicitacao recusada",
                 "Sua solicitacao para adotar " + solicitacao.getAnimal().getNome() + " foi recusada.",
                 "solicitacao_adocao", solicitacao.getId());
         registrarEvento(solicitacao, TipoEventoModeracao.recusada, "Solicitacao recusada pelo painel legado.");
+    }
+
+    private void atualizarAnimalDepoisDeEncerrarSolicitacao(SolicitacaoAdocao solicitacao) {
+        boolean temOutraEmAnalise = solicitacaoRepository.findByAnimalIdAndStatusInOrderByDataSolicitacaoAsc(
+                solicitacao.getAnimal().getId(), List.of(StatusSolicitacao.pendente, StatusSolicitacao.em_analise))
+                .stream()
+                .anyMatch(outra -> !outra.getId().equals(solicitacao.getId())
+                        && outra.getStatus() == StatusSolicitacao.em_analise);
+        solicitacao.getAnimal().setStatus(temOutraEmAnalise ? StatusAnimal.em_analise : StatusAnimal.disponivel);
     }
 
     private void registrarEvento(SolicitacaoAdocao solicitacao, TipoEventoModeracao tipo, String observacao) {

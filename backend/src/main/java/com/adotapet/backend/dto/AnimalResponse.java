@@ -32,6 +32,7 @@ public record AnimalResponse(
         String descricao,
         StatusAnimal status,
         LocalDateTime dataCadastro,
+        LocalDateTime dataAtualizacao,
         Integer protetorId,
         String protetorNome,
         List<String> imagemUrls
@@ -58,6 +59,7 @@ public record AnimalResponse(
                 animal.getDescricao(),
                 animal.getStatus(),
                 animal.getDataCadastro(),
+                animal.getDataAtualizacao(),
                 animal.getProtetor().getId(),
                 animal.getProtetor().getNome(),
                 animal.getImagens()

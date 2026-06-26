@@ -1,4 +1,4 @@
-const VALID_STATUS = new Set(["pendente", "em_analise", "aprovada", "recusada"]);
+const VALID_STATUS = new Set(["pendente", "em_analise", "aprovada", "recusada", "cancelada", "finalizada"]);
 const VALID_ORDER = new Set(["mais_antigas", "mais_recentes"]);
 
 export function createModeracaoState(overrides = {}) {
@@ -76,20 +76,30 @@ export function buildChecklistPayload(formOrValues = {}) {
 }
 
 export function buildDecisaoPayload(status, formOrValues = {}) {
+  const values = readValues(formOrValues);
   return {
     status,
-    ...buildChecklistPayload(formOrValues),
+    observacaoAdmin: String(values.observacaoAdmin || "").trim(),
+  };
+}
+
+export function buildFinalizacaoPayload(resultado, formOrValues = {}) {
+  const values = readValues(formOrValues);
+  return {
+    resultado,
+    observacaoAdmin: String(values.observacaoAdmin || "").trim(),
+  };
+}
+
+export function buildReversaoFinalizacaoPayload(formOrValues = {}) {
+  const values = readValues(formOrValues);
+  return {
+    observacaoAdmin: String(values.observacaoAdmin || "").trim(),
   };
 }
 
 export function canApproveSolicitacao(detalhe) {
-  const checklist = detalhe?.checklist || {};
-  return Boolean(
-    detalhe?.podeAprovar
-    && checklist.dadosAdotanteConferidos
-    && checklist.animalDisponivelConferido
-    && checklist.contatoRevisado
-  );
+  return Boolean(detalhe?.podeAprovar);
 }
 
 export function statusTabs() {
@@ -98,6 +108,7 @@ export function statusTabs() {
     { value: "em_analise", label: "Em analise", countKey: "emAnalise", tone: "green" },
     { value: "aprovada", label: "Aprovadas", countKey: "aprovadas", tone: "mint" },
     { value: "recusada", label: "Recusadas", countKey: "recusadas", tone: "coral" },
+    { value: "finalizada", label: "Finalizadas", countKey: "finalizadas", tone: "neutral" },
   ];
 }
 

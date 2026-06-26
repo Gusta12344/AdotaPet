@@ -6,5 +6,9 @@ public enum TipoEventoModeracao {
     checklist_atualizado,
     aprovada,
     recusada,
-    recusa_automatica
+    recusa_automatica,
+    solicitacao_cancelada,
+    adocao_finalizada,
+    adocao_cancelada,
+    finalizacao_revertida
 }

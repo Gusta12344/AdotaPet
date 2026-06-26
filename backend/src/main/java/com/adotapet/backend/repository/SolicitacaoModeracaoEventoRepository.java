@@ -18,7 +18,21 @@ public interface SolicitacaoModeracaoEventoRepository extends JpaRepository<Soli
     @Modifying
     @Query("""
             delete from SolicitacaoModeracaoEvento evento
+             where evento.solicitacao.id = :solicitacaoId
+            """)
+    void deleteBySolicitacaoId(@Param("solicitacaoId") Integer solicitacaoId);
+
+    @Modifying
+    @Query("""
+            delete from SolicitacaoModeracaoEvento evento
              where evento.solicitacao.animal.id = :animalId
             """)
     void deleteBySolicitacaoAnimalId(@Param("animalId") Integer animalId);
+
+    @Modifying
+    @Query("""
+            delete from SolicitacaoModeracaoEvento evento
+             where evento.solicitacao.adotante.id = :adotanteId
+            """)
+    void deleteBySolicitacaoAdotanteId(@Param("adotanteId") Integer adotanteId);
 }

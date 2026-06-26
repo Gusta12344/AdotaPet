@@ -5,31 +5,27 @@ const SORTERS = {
   mais_antigos: (left, right) => compareDate(left, right) || compareName(left, right),
   nome_az: (left, right) => compareName(left, right),
   nome_za: (left, right) => compareName(right, left),
-  idade_menor: (left, right) => compareAge(left, right) || compareName(left, right),
-  idade_maior: (left, right) => compareAge(right, left) || compareName(left, right),
 };
 
-export function filterAndSortAdminAnimals(animals = [], filters = {}) {
-  const source = Array.isArray(animals) ? animals : [];
+export function filterAndSortAdminUsers(users = [], filters = {}) {
+  const source = Array.isArray(users) ? users : [];
   const query = normalize(filters.query);
-  const status = normalize(filters.status);
-  const especie = normalize(filters.especie);
-  const porte = normalize(filters.porte);
-  const idade = normalize(filters.idade);
+  const perfil = normalize(filters.perfil);
+  const moradia = normalize(filters.moradia);
+  const atividade = normalize(filters.atividade);
   const sorter = SORTERS[filters.ordem] || SORTERS[DEFAULT_ORDER];
 
   return source
-    .filter((animal) => (
-      matchesQuery(animal, query)
-        && matchesExact(animal?.status, status)
-        && matchesExact(animal?.especie, especie)
-        && matchesExact(animal?.porte, porte)
-        && (!idade || getAdminAnimalAgeGroup(animal) === idade)
+    .filter((user) => (
+      matchesQuery(user, query)
+        && matchesPerfil(user, perfil)
+        && matchesExact(user?.tipoMoradia, moradia)
+        && matchesExact(user?.nivelAtividade, atividade)
     ))
     .sort(sorter);
 }
 
-export function paginateAdminAnimals(items = [], page = 0, pageSize = 10) {
+export function paginateAdminUsers(items = [], page = 0, pageSize = 10) {
   const source = Array.isArray(items) ? items : [];
   const size = normalizePageSize(pageSize);
   const totalItems = source.length;
@@ -54,33 +50,29 @@ export function paginateAdminAnimals(items = [], page = 0, pageSize = 10) {
   };
 }
 
-export function getAdminAnimalAgeGroup(animal) {
-  const age = Number(animal?.idadeMeses);
-  if (Number.isFinite(age) && age < 12) {
-    return "filhote";
-  }
-  if (Number.isFinite(age) && age >= 96) {
-    return "senior";
-  }
-  return "adulto";
-}
-
-function matchesQuery(animal, query) {
+function matchesQuery(user, query) {
   if (!query) {
     return true;
   }
 
   return normalize([
-    animal?.nome,
-    animal?.raca,
-    animal?.especie,
-    animal?.porte,
-    animal?.status,
-    animal?.ongNome,
-    animal?.organizacaoNome,
-    animal?.protetorNome,
-    animal?.nivelEnergia,
+    user?.nome,
+    user?.email,
+    user?.cpf,
+    user?.telefone,
+    user?.endereco,
+    user?.tipoMoradia,
+    user?.nivelAtividade,
+    user?.administrador ? "administrador admin usuario" : "adotante usuario",
   ].filter(Boolean).join(" ")).includes(query);
+}
+
+function matchesPerfil(user, perfil) {
+  if (!perfil) {
+    return true;
+  }
+
+  return perfil === "administrador" ? Boolean(user?.administrador) : !user?.administrador;
 }
 
 function matchesExact(value, expected) {
@@ -91,28 +83,12 @@ function compareName(left, right) {
   return String(left?.nome || "").localeCompare(String(right?.nome || ""), "pt-BR", { sensitivity: "base" });
 }
 
-function compareAge(left, right) {
-  return readAge(left) - readAge(right);
-}
-
 function compareDate(left, right) {
   return readDate(left) - readDate(right);
 }
 
-function readAge(animal) {
-  const value = Number(animal?.idadeMeses);
-  return Number.isFinite(value) ? value : 0;
-}
-
-function readDate(animal) {
-  const value = animal?.dataAtualizacao
-    || animal?.atualizadoEm
-    || animal?.dataAtualizado
-    || animal?.dataModificacao
-    || animal?.dataCadastro
-    || animal?.criadoEm
-    || animal?.dataCriacao
-    || animal?.dataResgate;
+function readDate(user) {
+  const value = user?.dataCadastro || user?.criadoEm || user?.dataCriacao;
   const timestamp = Date.parse(value);
   return Number.isFinite(timestamp) ? timestamp : 0;
 }

@@ -19,6 +19,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -91,6 +92,15 @@ public class Animal {
     @Column(name = "data_cadastro", nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
 
+    @Column(name = "data_atualizacao", nullable = false)
+    private LocalDateTime dataAtualizacao;
+
+    @Column(name = "data_disponivel_adocao", nullable = false)
+    private LocalDateTime dataDisponivelAdocao;
+
+    @Column(name = "data_exclusao_agendada")
+    private LocalDateTime dataExclusaoAgendada;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "protetor_id", nullable = false)
     private Protetor protetor;
@@ -104,6 +114,12 @@ public class Animal {
         if (dataCadastro == null) {
             dataCadastro = LocalDateTime.now();
         }
+        if (dataAtualizacao == null) {
+            dataAtualizacao = dataCadastro;
+        }
+        if (dataDisponivelAdocao == null) {
+            dataDisponivelAdocao = dataCadastro;
+        }
         if (status == null) {
             status = StatusAnimal.disponivel;
         }
@@ -113,6 +129,11 @@ public class Animal {
         if (raca == null || raca.isBlank()) {
             raca = "SRD";
         }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        dataAtualizacao = LocalDateTime.now();
     }
 
     public Integer getId() {
@@ -273,6 +294,30 @@ public class Animal {
 
     public void setDataCadastro(LocalDateTime dataCadastro) {
         this.dataCadastro = dataCadastro;
+    }
+
+    public LocalDateTime getDataAtualizacao() {
+        return dataAtualizacao;
+    }
+
+    public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+        this.dataAtualizacao = dataAtualizacao;
+    }
+
+    public LocalDateTime getDataDisponivelAdocao() {
+        return dataDisponivelAdocao;
+    }
+
+    public void setDataDisponivelAdocao(LocalDateTime dataDisponivelAdocao) {
+        this.dataDisponivelAdocao = dataDisponivelAdocao;
+    }
+
+    public LocalDateTime getDataExclusaoAgendada() {
+        return dataExclusaoAgendada;
+    }
+
+    public void setDataExclusaoAgendada(LocalDateTime dataExclusaoAgendada) {
+        this.dataExclusaoAgendada = dataExclusaoAgendada;
     }
 
     public Protetor getProtetor() {

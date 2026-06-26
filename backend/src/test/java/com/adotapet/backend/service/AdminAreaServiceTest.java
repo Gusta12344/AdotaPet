@@ -2,6 +2,7 @@ package com.adotapet.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.adotapet.backend.dto.AdminMensagemRequest;
 import com.adotapet.backend.dto.AdminUsuarioCreateRequest;
+import com.adotapet.backend.dto.AdminUsuarioUpdateRequest;
 import com.adotapet.backend.dto.NotificacaoResponse;
 import com.adotapet.backend.model.Admin;
 import com.adotapet.backend.model.Adotante;
@@ -33,8 +35,10 @@ import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.repository.AdminRepository;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
+import com.adotapet.backend.repository.FavoritoAnimalRepository;
 import com.adotapet.backend.repository.NotificacaoRepository;
 import com.adotapet.backend.repository.SolicitacaoAdocaoRepository;
+import com.adotapet.backend.repository.SolicitacaoModeracaoEventoRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AdminAreaServiceTest {
@@ -50,6 +54,12 @@ class AdminAreaServiceTest {
 
     @Mock
     private SolicitacaoAdocaoRepository solicitacaoRepository;
+
+    @Mock
+    private SolicitacaoModeracaoEventoRepository solicitacaoEventoRepository;
+
+    @Mock
+    private FavoritoAnimalRepository favoritoAnimalRepository;
 
     @Mock
     private NotificacaoRepository notificacaoRepository;
@@ -69,6 +79,8 @@ class AdminAreaServiceTest {
                 adotanteRepository,
                 adminRepository,
                 solicitacaoRepository,
+                solicitacaoEventoRepository,
+                favoritoAnimalRepository,
                 notificacaoRepository,
                 notificacaoService,
                 passwordEncoder
@@ -143,6 +155,26 @@ class AdminAreaServiceTest {
     }
 
     @Test
+    void listaUsuariosIncluiAdministradorSemAdotante() {
+        Adotante maria = adotante(7, "Maria Oliveira", "maria@email.com", "111.111.111-11", "$hash-maria");
+        Admin adminMaria = admin(3, maria.getNome(), maria.getEmail(), maria.getCpf(), "$hash-maria");
+        Admin adminLogado = admin(1, "Administrador AdotaPet", "admin@adotapet.com", "000.000.000-00", "$hash-admin");
+
+        when(adotanteRepository.findAllByOrderByDataCadastroDesc()).thenReturn(List.of(maria));
+        when(adminRepository.findAll()).thenReturn(List.of(adminMaria, adminLogado));
+
+        var usuarios = adminAreaService.listarUsuarios();
+
+        assertEquals(2, usuarios.size());
+        assertEquals("Maria Oliveira", usuarios.get(0).nome());
+        assertEquals(false, usuarios.get(0).somenteAdministrador());
+        assertEquals("Administrador AdotaPet", usuarios.get(1).nome());
+        assertEquals(true, usuarios.get(1).administrador());
+        assertEquals(true, usuarios.get(1).somenteAdministrador());
+        assertEquals(1, usuarios.get(1).adminId());
+    }
+
+    @Test
     void promoveAdotanteParaAdminReaproveitandoCredenciaisExistentes() {
         Adotante maria = adotante(7, "Maria Oliveira", "maria@email.com", "111.111.111-11", "$hash-maria");
         ArgumentCaptor<Admin> adminCaptor = ArgumentCaptor.forClass(Admin.class);
@@ -209,6 +241,110 @@ class AdminAreaServiceTest {
         assertEquals("ana@email.com", usuario.email());
         assertEquals(true, usuario.administrador());
         assertEquals(21, usuario.adminId());
+    }
+
+    @Test
+    void atualizaUsuarioEAdminCorrespondente() {
+        Adotante maria = adotante(7, "Maria Oliveira", "maria@email.com", "111.111.111-11", "$hash-maria");
+        Admin adminMaria = admin(3, maria.getNome(), maria.getEmail(), maria.getCpf(), "$hash-maria");
+        AdminUsuarioUpdateRequest request = new AdminUsuarioUpdateRequest(
+                " Maria Souza ",
+                "999.999.999-99",
+                "",
+                " MARIA.SOUZA@EMAIL.COM ",
+                "(49) 98888-0000",
+                "Rua Nova, 22",
+                TipoMoradia.casa_com_quintal,
+                true,
+                false,
+                NivelAtividade.ativo,
+                Porte.grande,
+                Especie.cao,
+                true
+        );
+
+        when(adotanteRepository.findById(7)).thenReturn(Optional.of(maria));
+        when(adminRepository.findByEmail("maria@email.com")).thenReturn(Optional.of(adminMaria));
+        when(adotanteRepository.findByEmail("maria.souza@email.com")).thenReturn(Optional.empty());
+        when(adotanteRepository.findByCpf("999.999.999-99")).thenReturn(Optional.empty());
+        when(adminRepository.findByEmail("maria.souza@email.com")).thenReturn(Optional.empty());
+        when(adminRepository.findByCpf("999.999.999-99")).thenReturn(Optional.empty());
+
+        var usuario = adminAreaService.atualizarUsuario(7, request);
+
+        assertEquals("Maria Souza", usuario.nome());
+        assertEquals("maria.souza@email.com", usuario.email());
+        assertEquals("999.999.999-99", usuario.cpf());
+        assertEquals(true, usuario.administrador());
+        assertEquals("Maria Souza", adminMaria.getNome());
+        assertEquals("maria.souza@email.com", adminMaria.getEmail());
+        assertEquals("999.999.999-99", adminMaria.getCpf());
+        assertEquals("$hash-maria", adminMaria.getSenha());
+    }
+
+    @Test
+    void excluiUsuarioComVinculosEAdminCorrespondente() {
+        Adotante maria = adotante(7, "Maria Oliveira", "maria@email.com", "111.111.111-11", "$hash-maria");
+        Admin adminMaria = admin(3, maria.getNome(), maria.getEmail(), maria.getCpf(), "$hash-maria");
+
+        when(adotanteRepository.findById(7)).thenReturn(Optional.of(maria));
+        when(adminRepository.findByEmail("maria@email.com")).thenReturn(Optional.of(adminMaria));
+
+        adminAreaService.excluirUsuario(7);
+
+        var order = inOrder(adminRepository, solicitacaoEventoRepository, solicitacaoRepository,
+                favoritoAnimalRepository, notificacaoRepository, adotanteRepository);
+        order.verify(adminRepository).delete(adminMaria);
+        order.verify(solicitacaoEventoRepository).deleteBySolicitacaoAdotanteId(7);
+        order.verify(solicitacaoRepository).deleteByAdotanteId(7);
+        order.verify(favoritoAnimalRepository).deleteByAdotanteId(7);
+        order.verify(notificacaoRepository).deleteByAdotanteId(7);
+        order.verify(adotanteRepository).delete(maria);
+    }
+
+    @Test
+    void atualizaAdministradorSemAdotante() {
+        Admin adminLogado = admin(1, "Administrador AdotaPet", "admin@adotapet.com", "000.000.000-00", "$hash-admin");
+        AdminUsuarioUpdateRequest request = new AdminUsuarioUpdateRequest(
+                " Admin Principal ",
+                "000.000.000-01",
+                "",
+                " ADMIN.PRINCIPAL@ADOTAPET.COM ",
+                "",
+                "",
+                TipoMoradia.apartamento,
+                false,
+                false,
+                NivelAtividade.moderado,
+                Porte.medio,
+                Especie.gato,
+                true
+        );
+
+        when(adminRepository.findById(1)).thenReturn(Optional.of(adminLogado));
+        when(adotanteRepository.findByEmail("admin.principal@adotapet.com")).thenReturn(Optional.empty());
+        when(adotanteRepository.findByCpf("000.000.000-01")).thenReturn(Optional.empty());
+        when(adminRepository.findByEmail("admin.principal@adotapet.com")).thenReturn(Optional.empty());
+        when(adminRepository.findByCpf("000.000.000-01")).thenReturn(Optional.empty());
+
+        var usuario = adminAreaService.atualizarAdministrador(1, request);
+
+        assertEquals("Admin Principal", usuario.nome());
+        assertEquals("admin.principal@adotapet.com", usuario.email());
+        assertEquals("000.000.000-01", usuario.cpf());
+        assertEquals(true, usuario.somenteAdministrador());
+        assertEquals("$hash-admin", adminLogado.getSenha());
+    }
+
+    @Test
+    void excluiAdministradorSemAdotante() {
+        Admin adminLogado = admin(1, "Administrador AdotaPet", "admin@adotapet.com", "000.000.000-00", "$hash-admin");
+
+        when(adminRepository.findById(1)).thenReturn(Optional.of(adminLogado));
+
+        adminAreaService.excluirAdministrador(1);
+
+        verify(adminRepository).delete(adminLogado);
     }
 
     @Test

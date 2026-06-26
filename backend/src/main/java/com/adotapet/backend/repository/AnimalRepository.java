@@ -1,5 +1,6 @@
 package com.adotapet.backend.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,7 +15,13 @@ public interface AnimalRepository extends JpaRepository<Animal, Integer> {
     List<Animal> findByStatusOrderByDataCadastroAsc(StatusAnimal status);
 
     @EntityGraph(attributePaths = "protetor")
+    List<Animal> findByStatusInOrderByDataCadastroAsc(List<StatusAnimal> status);
+
+    @EntityGraph(attributePaths = "protetor")
     List<Animal> findAllByOrderByDataCadastroAsc();
+
+    @EntityGraph(attributePaths = "protetor")
+    List<Animal> findByStatusAndDataExclusaoAgendadaLessThanEqual(StatusAnimal status, LocalDateTime data);
 
     long countByStatus(StatusAnimal status);
 }

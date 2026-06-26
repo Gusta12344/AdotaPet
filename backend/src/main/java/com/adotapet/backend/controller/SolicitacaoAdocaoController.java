@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.adotapet.backend.dto.SolicitacaoRequest;
+import com.adotapet.backend.dto.SolicitacaoCancelamentoRequest;
 import com.adotapet.backend.dto.SolicitacaoResponse;
 import com.adotapet.backend.dto.SolicitacaoStatusRequest;
 import com.adotapet.backend.service.SolicitacaoAdocaoService;
@@ -42,6 +43,12 @@ public class SolicitacaoAdocaoController {
     @GetMapping("/adotantes/{adotanteId}")
     public List<SolicitacaoResponse> listarPorAdotante(@PathVariable Integer adotanteId) {
         return solicitacaoService.listarPorAdotante(adotanteId);
+    }
+
+    @PostMapping("/{id}/cancelamento")
+    public SolicitacaoResponse cancelar(@PathVariable Integer id,
+            @Valid @RequestBody SolicitacaoCancelamentoRequest request) {
+        return solicitacaoService.cancelar(id, request.adotanteId());
     }
 
     @PutMapping("/{id}")

@@ -1,5 +1,6 @@
 package com.adotapet.backend.service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,11 @@ import com.adotapet.backend.repository.SolicitacaoModeracaoEventoRepository;
 @Service
 public class AnimalService {
 
+    private static final List<StatusAnimal> STATUS_VISIVEIS_PUBLICO = List.of(
+            StatusAnimal.disponivel,
+            StatusAnimal.em_analise
+    );
+
     private final AnimalRepository animalRepository;
     private final ProtetorRepository protetorRepository;
     private final AdotanteRepository adotanteRepository;
@@ -52,7 +58,7 @@ public class AnimalService {
 
     @Transactional(readOnly = true)
     public List<AnimalResponse> listarDisponiveis() {
-        return animalRepository.findByStatusOrderByDataCadastroAsc(StatusAnimal.disponivel)
+        return animalRepository.findByStatusInOrderByDataCadastroAsc(STATUS_VISIVEIS_PUBLICO)
                 .stream()
                 .map(AnimalResponse::fromEntity)
                 .toList();
@@ -165,10 +171,17 @@ public class AnimalService {
     @Transactional
     public void excluir(Integer id) {
         Animal animal = buscarAnimal(id);
-        solicitacaoModeracaoEventoRepository.deleteBySolicitacaoAnimalId(id);
-        solicitacaoAdocaoRepository.deleteByAnimalId(id);
-        favoritoAnimalRepository.deleteByAnimalId(id);
-        animalRepository.delete(animal);
+        excluirAnimal(animal);
+    }
+
+    @Transactional
+    public int excluirAnimaisComExclusaoAgendada(LocalDateTime agora) {
+        List<Animal> animais = animalRepository.findByStatusAndDataExclusaoAgendadaLessThanEqual(
+                StatusAnimal.adotado, agora);
+        for (Animal animal : animais) {
+            excluirAnimal(animal);
+        }
+        return animais.size();
     }
 
     @Transactional(readOnly = true)
@@ -177,7 +190,7 @@ public class AnimalService {
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Adotante nao encontrado"));
 
         List<RecomendacaoAnimalResponse> recomendacoes = new ArrayList<>();
-        for (Animal animal : animalRepository.findByStatusOrderByDataCadastroAsc(StatusAnimal.disponivel)) {
+        for (Animal animal : animalRepository.findByStatusInOrderByDataCadastroAsc(STATUS_VISIVEIS_PUBLICO)) {
             recomendacoes.add(new RecomendacaoAnimalResponse(AnimalResponse.fromEntity(animal), calcularScore(adotante, animal)));
         }
 
@@ -187,6 +200,13 @@ public class AnimalService {
     private Animal buscarAnimal(Integer id) {
         return animalRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException("Animal nao encontrado"));
+    }
+
+    private void excluirAnimal(Animal animal) {
+        solicitacaoModeracaoEventoRepository.deleteBySolicitacaoAnimalId(animal.getId());
+        solicitacaoAdocaoRepository.deleteByAnimalId(animal.getId());
+        favoritoAnimalRepository.deleteByAnimalId(animal.getId());
+        animalRepository.delete(animal);
     }
 
     private void preencherImagens(Animal animal, List<String> caminhosImagem) {

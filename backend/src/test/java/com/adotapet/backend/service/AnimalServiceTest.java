@@ -106,6 +106,61 @@ class AnimalServiceTest {
     }
 
     @Test
+    void listagemPublicaIncluiEmAnaliseEExcluiAdotados() {
+        Animal disponivel = animalBase();
+        disponivel.setId(10);
+        disponivel.setNome("Luna");
+        disponivel.setStatus(StatusAnimal.disponivel);
+        disponivel.setDataCadastro(LocalDateTime.of(2026, 6, 1, 9, 0));
+        disponivel.setProtetor(protetor(2));
+        Animal emAnalise = animalBase();
+        emAnalise.setId(11);
+        emAnalise.setNome("Thor");
+        emAnalise.setStatus(StatusAnimal.em_analise);
+        emAnalise.setDataCadastro(LocalDateTime.of(2026, 6, 2, 9, 0));
+        emAnalise.setProtetor(protetor(2));
+
+        when(animalRepository.findByStatusInOrderByDataCadastroAsc(
+                List.of(StatusAnimal.disponivel, StatusAnimal.em_analise)))
+                .thenReturn(List.of(disponivel, emAnalise));
+
+        var animais = animalService.listarDisponiveis();
+
+        assertEquals(2, animais.size());
+        assertEquals(StatusAnimal.disponivel, animais.get(0).status());
+        assertEquals(StatusAnimal.em_analise, animais.get(1).status());
+    }
+
+    @Test
+    void recomendacoesPublicasIncluemEmAnaliseEExcluemAdotados() {
+        Adotante adotante = adotanteComOutrosAnimais();
+        adotante.setId(7);
+        Animal disponivel = animalBase();
+        disponivel.setId(10);
+        disponivel.setNome("Luna");
+        disponivel.setStatus(StatusAnimal.disponivel);
+        disponivel.setDataCadastro(LocalDateTime.of(2026, 6, 1, 9, 0));
+        disponivel.setProtetor(protetor(2));
+        Animal emAnalise = animalBase();
+        emAnalise.setId(11);
+        emAnalise.setNome("Thor");
+        emAnalise.setStatus(StatusAnimal.em_analise);
+        emAnalise.setDataCadastro(LocalDateTime.of(2026, 6, 2, 9, 0));
+        emAnalise.setProtetor(protetor(2));
+
+        when(adotanteRepository.findById(7)).thenReturn(Optional.of(adotante));
+        when(animalRepository.findByStatusInOrderByDataCadastroAsc(
+                List.of(StatusAnimal.disponivel, StatusAnimal.em_analise)))
+                .thenReturn(List.of(disponivel, emAnalise));
+
+        var recomendacoes = animalService.recomendarParaAdotante(7);
+
+        assertEquals(2, recomendacoes.size());
+        assertEquals(StatusAnimal.disponivel, recomendacoes.get(0).animal().status());
+        assertEquals(StatusAnimal.em_analise, recomendacoes.get(1).animal().status());
+    }
+
+    @Test
     void atualizaDadosCadastraisDoAnimal() {
         Animal animal = animalBase();
         animal.setId(10);
@@ -161,6 +216,28 @@ class AnimalServiceTest {
         inOrder.verify(solicitacaoAdocaoRepository).deleteByAnimalId(10);
         inOrder.verify(favoritoAnimalRepository).deleteByAnimalId(10);
         inOrder.verify(animalRepository).delete(animal);
+    }
+
+    @Test
+    void excluiAnimaisAdotadosComExclusaoAgendadaVencida() {
+        LocalDateTime agora = LocalDateTime.of(2026, 6, 21, 10, 0);
+        Animal luna = animalBase();
+        luna.setId(10);
+        luna.setStatus(StatusAnimal.adotado);
+        luna.setDataExclusaoAgendada(agora.minusHours(1));
+
+        when(animalRepository.findByStatusAndDataExclusaoAgendadaLessThanEqual(StatusAnimal.adotado, agora))
+                .thenReturn(List.of(luna));
+
+        int total = animalService.excluirAnimaisComExclusaoAgendada(agora);
+
+        assertEquals(1, total);
+        var inOrder = inOrder(solicitacaoModeracaoEventoRepository, solicitacaoAdocaoRepository,
+                favoritoAnimalRepository, animalRepository);
+        inOrder.verify(solicitacaoModeracaoEventoRepository).deleteBySolicitacaoAnimalId(10);
+        inOrder.verify(solicitacaoAdocaoRepository).deleteByAnimalId(10);
+        inOrder.verify(favoritoAnimalRepository).deleteByAnimalId(10);
+        inOrder.verify(animalRepository).delete(luna);
     }
 
     private Adotante adotanteComOutrosAnimais() {

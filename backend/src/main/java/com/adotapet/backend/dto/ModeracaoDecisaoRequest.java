@@ -7,9 +7,10 @@ import jakarta.validation.constraints.Size;
 
 public record ModeracaoDecisaoRequest(
         @NotNull StatusSolicitacao status,
-        @NotNull Boolean dadosAdotanteConferidos,
-        @NotNull Boolean animalDisponivelConferido,
-        @NotNull Boolean contatoRevisado,
         @Size(max = 500) String observacaoAdmin
 ) {
+    public ModeracaoDecisaoRequest(StatusSolicitacao status, Boolean dadosAdotanteConferidos,
+            Boolean animalDisponivelConferido, Boolean contatoRevisado, String observacaoAdmin) {
+        this(status, observacaoAdmin);
+    }
 }

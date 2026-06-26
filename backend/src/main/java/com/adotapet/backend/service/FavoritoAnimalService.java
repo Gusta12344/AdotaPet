@@ -9,6 +9,7 @@ import com.adotapet.backend.dto.AnimalResponse;
 import com.adotapet.backend.model.Adotante;
 import com.adotapet.backend.model.Animal;
 import com.adotapet.backend.model.FavoritoAnimal;
+import com.adotapet.backend.model.StatusAnimal;
 import com.adotapet.backend.model.TipoNotificacao;
 import com.adotapet.backend.repository.AdotanteRepository;
 import com.adotapet.backend.repository.AnimalRepository;
@@ -50,6 +51,7 @@ public class FavoritoAnimalService {
         return favoritoAnimalRepository.findByAdotanteIdOrderByDataFavoritoDesc(adotanteId)
                 .stream()
                 .map(FavoritoAnimal::getAnimal)
+                .filter(animal -> animal.getStatus() != StatusAnimal.adotado)
                 .map(AnimalResponse::fromEntity)
                 .toList();
     }

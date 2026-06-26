@@ -51,4 +51,11 @@ public interface SolicitacaoAdocaoRepository extends JpaRepository<SolicitacaoAd
              where solicitacao.animal.id = :animalId
             """)
     void deleteByAnimalId(@Param("animalId") Integer animalId);
+
+    @Modifying
+    @Query("""
+            delete from SolicitacaoAdocao solicitacao
+             where solicitacao.adotante.id = :adotanteId
+            """)
+    void deleteByAdotanteId(@Param("adotanteId") Integer adotanteId);
 }

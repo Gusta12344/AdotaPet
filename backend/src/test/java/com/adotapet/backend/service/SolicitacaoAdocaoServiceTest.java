@@ -1,6 +1,8 @@
 package com.adotapet.backend.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -82,6 +84,42 @@ class SolicitacaoAdocaoServiceTest {
     }
 
     @Test
+    void criarSolicitacaoMantemAnimalDisponivelAteAnaliseAdministrativaComecar() {
+        Adotante adotante = adotante(7);
+        Animal animal = animal(3, "Nina");
+
+        when(animalRepository.findById(3)).thenReturn(java.util.Optional.of(animal));
+        when(adotanteRepository.findById(7)).thenReturn(java.util.Optional.of(adotante));
+        when(solicitacaoRepository.existsByAnimalIdAndAdotanteIdAndStatusIn(eq(3), eq(7), any()))
+                .thenReturn(false);
+        when(solicitacaoRepository.save(any(SolicitacaoAdocao.class))).thenAnswer(invocation -> {
+            SolicitacaoAdocao solicitacao = invocation.getArgument(0);
+            solicitacao.setId(30);
+            return solicitacao;
+        });
+
+        solicitacaoService.criar(new SolicitacaoRequest(3, 7));
+
+        assertEquals(StatusAnimal.disponivel, animal.getStatus());
+    }
+
+    @Test
+    void rejeitaSolicitacaoDuplicadaComMensagemAoAdotante() {
+        Adotante adotante = adotante(7);
+        Animal animal = animal(3, "Nina");
+
+        when(animalRepository.findById(3)).thenReturn(java.util.Optional.of(animal));
+        when(adotanteRepository.findById(7)).thenReturn(java.util.Optional.of(adotante));
+        when(solicitacaoRepository.existsByAnimalIdAndAdotanteIdAndStatusIn(eq(3), eq(7), any()))
+                .thenReturn(true);
+
+        RegraNegocioException exception = assertThrows(RegraNegocioException.class,
+                () -> solicitacaoService.criar(new SolicitacaoRequest(3, 7)));
+
+        assertEquals("Você já está na fila de adoção para esse animal, aguarde!", exception.getMessage());
+    }
+
+    @Test
     void listaSolicitacoesDoAdotanteDaMaisRecenteParaAMaisAntiga() {
         Adotante adotante = adotante(7);
         SolicitacaoAdocao aprovada = solicitacao(12, adotante, animal(3, "Nina"), StatusSolicitacao.aprovada,
@@ -115,9 +153,31 @@ class SolicitacaoAdocaoServiceTest {
 
         solicitacaoService.atualizarStatus(12, StatusSolicitacao.aprovada);
 
+        assertEquals(StatusAnimal.disponivel, animal.getStatus());
         verify(notificacaoService).criar(eq(adotante), eq(TipoNotificacao.adocao),
                 eq("Solicitacao aprovada"), eq("Sua solicitacao para adotar Nina foi aprovada."),
                 eq("solicitacao_adocao"), eq(12));
+    }
+
+    @Test
+    void adotanteCancelaSolicitacaoAtiva() {
+        Adotante adotante = adotante(7);
+        Animal animal = animal(3, "Nina");
+        animal.setStatus(StatusAnimal.em_analise);
+        SolicitacaoAdocao solicitacao = solicitacao(12, adotante, animal, StatusSolicitacao.em_analise,
+                LocalDateTime.of(2026, 6, 2, 10, 0));
+
+        when(solicitacaoRepository.findById(12)).thenReturn(java.util.Optional.of(solicitacao));
+        when(solicitacaoRepository.findByAnimalIdAndStatusInOrderByDataSolicitacaoAsc(eq(3), any()))
+                .thenReturn(List.of(solicitacao));
+
+        var response = solicitacaoService.cancelar(12, 7);
+
+        assertEquals(StatusSolicitacao.cancelada, response.status());
+        assertEquals(StatusSolicitacao.cancelada, solicitacao.getStatus());
+        assertEquals(StatusAnimal.disponivel, animal.getStatus());
+        assertNotNull(solicitacao.getDataDecisao());
+        verify(eventoRepository).save(any());
     }
 
     private SolicitacaoAdocao solicitacao(Integer id, Adotante adotante, Animal animal, StatusSolicitacao status,

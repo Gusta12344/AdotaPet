@@ -97,7 +97,7 @@ class SecurityConfigTest {
             return new ModeracaoAdocaoService(null, null, null, null) {
                 @Override
                 public ModeracaoResumoResponse resumo() {
-                    return new ModeracaoResumoResponse(0, 0, 0, 0, 0);
+                    return new ModeracaoResumoResponse(0, 0, 0, 0, 0, 0);
                 }
             };
         }

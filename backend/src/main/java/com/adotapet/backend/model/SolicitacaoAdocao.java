@@ -44,6 +44,9 @@ public class SolicitacaoAdocao {
     @Column(name = "data_decisao")
     private LocalDateTime dataDecisao;
 
+    @Column(name = "data_finalizacao")
+    private LocalDateTime dataFinalizacao;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "admin_responsavel_id")
     private Admin adminResponsavel;
@@ -124,6 +127,14 @@ public class SolicitacaoAdocao {
 
     public void setDataDecisao(LocalDateTime dataDecisao) {
         this.dataDecisao = dataDecisao;
+    }
+
+    public LocalDateTime getDataFinalizacao() {
+        return dataFinalizacao;
+    }
+
+    public void setDataFinalizacao(LocalDateTime dataFinalizacao) {
+        this.dataFinalizacao = dataFinalizacao;
     }
 
     public Admin getAdminResponsavel() {

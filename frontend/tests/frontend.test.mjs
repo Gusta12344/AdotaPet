@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 
 import {
   buildAdminUpdatePayload,
@@ -23,6 +24,9 @@ import {
 import {
   renderSharedAuthShell,
 } from "../js/shared-auth-shell.js";
+import {
+  createAdminShell,
+} from "../js/admin-shell.js";
 import {
   buildBasicAuthHeader,
   readAdminCredentials,
@@ -49,7 +53,12 @@ import {
 } from "../js/animal-gallery.js";
 import {
   filterAndSortAdminAnimals,
+  paginateAdminAnimals,
 } from "../js/admin-animal-filters.js";
+import {
+  filterAndSortAdminUsers,
+  paginateAdminUsers,
+} from "../js/admin-user-filters.js";
 import {
   adoptionStatusNotification,
   createNotificationCenter,
@@ -180,6 +189,14 @@ class TestElement {
     }
   }
 
+  querySelector(selector) {
+    return findBySelector(this, selector);
+  }
+
+  querySelectorAll(selector) {
+    return findAllBySelector(this, selector);
+  }
+
   click() {
     this.dispatchEvent({
       type: "click",
@@ -192,8 +209,10 @@ class TestElement {
 
 function documentMock() {
   const body = new TestElement("body");
+  const documentElement = new TestElement("html");
   const documentRef = {
     body,
+    documentElement,
     createElement(tagName) {
       const element = new TestElement(tagName);
       element.ownerDocument = documentRef;
@@ -204,6 +223,9 @@ function documentMock() {
       element.ownerDocument = documentRef;
       return element;
     },
+    createTextNode(text) {
+      return String(text);
+    },
     querySelector(selector) {
       return findBySelector(body, selector);
     },
@@ -211,6 +233,7 @@ function documentMock() {
       return findAllBySelector(body, selector);
     },
   };
+  documentElement.ownerDocument = documentRef;
   body.ownerDocument = documentRef;
   return documentRef;
 }
@@ -607,6 +630,96 @@ test("filterAndSortAdminAnimals supports age groups and admin sort orders", () =
   );
 });
 
+test("filterAndSortAdminAnimals searches organizations and prefers update dates", () => {
+  const animals = [
+    { id: 1, nome: "Luna", especie: "cao", porte: "medio", idadeMeses: 24, status: "disponivel", protetorNome: "Amor de Patas", dataAtualizacao: "2025-05-22T09:00:00" },
+    { id: 2, nome: "Thor", especie: "cao", porte: "grande", idadeMeses: 36, status: "em_analise", organizacaoNome: "Resgate Feliz", dataAtualizacao: "2025-05-24T10:00:00" },
+    { id: 3, nome: "Mia", especie: "gato", porte: "pequeno", idadeMeses: 8, status: "disponivel", ongNome: "Casa Animal", dataCadastro: "2025-05-23T10:00:00" },
+  ];
+
+  assert.deepEqual(
+    filterAndSortAdminAnimals(animals, { query: "resgate", ordem: "mais_recentes" }).map((animal) => animal.nome),
+    ["Thor"]
+  );
+  assert.deepEqual(
+    filterAndSortAdminAnimals(animals, { ordem: "mais_recentes" }).map((animal) => animal.nome),
+    ["Thor", "Mia", "Luna"]
+  );
+});
+
+test("paginateAdminAnimals limits admin table pages to 10 animals", () => {
+  const animals = Array.from({ length: 23 }, (_, index) => ({ id: index + 1, nome: `Animal ${index + 1}` }));
+
+  const firstPage = paginateAdminAnimals(animals, 0, 10);
+  const secondPage = paginateAdminAnimals(animals, 1, 10);
+  const lastPage = paginateAdminAnimals(animals, 99, 10);
+
+  assert.equal(firstPage.totalItems, 23);
+  assert.equal(firstPage.totalPages, 3);
+  assert.deepEqual(firstPage.items.map((animal) => animal.id), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(secondPage.items.map((animal) => animal.id), [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
+  assert.deepEqual(lastPage.items.map((animal) => animal.id), [21, 22, 23]);
+  assert.equal(lastPage.page, 2);
+  assert.equal(lastPage.from, 21);
+  assert.equal(lastPage.to, 23);
+});
+
+test("filterAndSortAdminUsers combines admin user filters without mutating the source list", () => {
+  const users = [
+    { id: 1, nome: "Maria", email: "maria@email.com", cpf: "111", telefone: "4799", administrador: true, tipoMoradia: "apartamento", nivelAtividade: "ativo", dataCadastro: "2026-06-01T10:00:00" },
+    { id: 2, nome: "Bruno", email: "bruno@email.com", cpf: "222", telefone: "4899", administrador: false, tipoMoradia: "casa_com_quintal", nivelAtividade: "moderado", dataCadastro: "2026-06-03T10:00:00" },
+    { id: 3, nome: "Ana", email: "ana@email.com", cpf: "333", telefone: "4999", administrador: true, tipoMoradia: "casa_sem_quintal", nivelAtividade: "sedentario", dataCadastro: "2026-06-02T10:00:00" },
+  ];
+
+  const filtered = filterAndSortAdminUsers(users, {
+    query: "maria",
+    perfil: "administrador",
+    moradia: "apartamento",
+    atividade: "ativo",
+    ordem: "nome_az",
+  });
+
+  assert.notEqual(filtered, users);
+  assert.deepEqual(filtered.map((user) => user.nome), ["Maria"]);
+  assert.deepEqual(users.map((user) => user.nome), ["Maria", "Bruno", "Ana"]);
+});
+
+test("filterAndSortAdminUsers supports profile filters and admin sort orders", () => {
+  const users = [
+    { id: 1, nome: "Zeca", administrador: false, dataCadastro: "2026-06-01T10:00:00" },
+    { id: 2, nome: "Amora", administrador: true, dataCadastro: "2026-06-03T10:00:00" },
+    { id: 3, nome: "Bento", administrador: false, dataCadastro: "2026-06-02T10:00:00" },
+  ];
+
+  assert.deepEqual(
+    filterAndSortAdminUsers(users, { perfil: "adotante", ordem: "nome_az" }).map((user) => user.nome),
+    ["Bento", "Zeca"]
+  );
+  assert.deepEqual(
+    filterAndSortAdminUsers(users, { ordem: "mais_recentes" }).map((user) => user.nome),
+    ["Amora", "Bento", "Zeca"]
+  );
+  assert.deepEqual(
+    filterAndSortAdminUsers(users, { ordem: "nome_za" }).map((user) => user.nome),
+    ["Zeca", "Bento", "Amora"]
+  );
+});
+
+test("paginateAdminUsers limits admin user table pages to 10 users", () => {
+  const users = Array.from({ length: 21 }, (_, index) => ({ id: index + 1, nome: `Usuario ${index + 1}` }));
+
+  const firstPage = paginateAdminUsers(users, 0, 10);
+  const lastPage = paginateAdminUsers(users, 9, 10);
+
+  assert.equal(firstPage.totalItems, 21);
+  assert.equal(firstPage.totalPages, 3);
+  assert.deepEqual(firstPage.items.map((user) => user.id), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(lastPage.items.map((user) => user.id), [21]);
+  assert.equal(lastPage.page, 2);
+  assert.equal(lastPage.from, 21);
+  assert.equal(lastPage.to, 21);
+});
+
 test("chooseAnimalImageUrl uses a registered animal image before calling random APIs", async () => {
   const url = await chooseAnimalImageUrl({
     especie: "cao",
@@ -787,6 +900,28 @@ test("renderAnimalCard routes the save CTA through favorite toggling", () => {
   findByClass(card, "button-save").click();
 
   assert.equal(toggledAnimalId, animalCardFixture.id);
+});
+
+test("adoption success modal shows queue confirmation and next actions", async () => {
+  const moduleUrl = new URL("../js/adoption-success-modal.js", import.meta.url);
+  assert.ok(fs.existsSync(moduleUrl), "adoption success modal helper should exist");
+  const { createAdoptionSuccessModal } = await import(moduleUrl.href);
+
+  const modal = withDocumentMock(() => createAdoptionSuccessModal({
+    id: 30,
+    animalNome: "Nina",
+  }));
+  const text = textTree(modal);
+
+  assert.match(modal.className, /adoption-success-modal/);
+  assert.equal(modal.getAttribute("data-adoption-success-modal"), "");
+  assert.match(text, /Solicitação enviada/);
+  assert.match(text, /Você entrou na fila de adoção para Nina/);
+  assert.match(text, /Solicitação#30/);
+  assert.match(text, /Ver outros animais/);
+  assert.match(text, /Voltar ao início/);
+  assert.equal(textTree(modal.querySelector('[href="recomendados.html"]')), "Ver outros animais");
+  assert.equal(textTree(modal.querySelector('[href="index.html"]')), "Voltar ao início");
 });
 
 test("enhanceSelectDropdown opens with animation state and syncs the native select", () => {
@@ -986,6 +1121,123 @@ test("header auth controller routes admins to the profile edit page", () => {
   }
 });
 
+test("header auth controller opens adopter requests modal with current user requests", async () => {
+  const storage = storageMock();
+  saveCurrentUser(storage, {
+    id: 7,
+    nome: "Mariana Costa",
+    cpf: "777.777.777-77",
+    email: "mariana@email.com",
+    tipo: "adotante",
+  });
+
+  const calls = [];
+  const apiClient = {
+    async get(path) {
+      calls.push(path);
+      return [{
+        id: 12,
+        animalNome: "Nina",
+        status: "em_analise",
+        dataSolicitacao: "2026-06-03T10:00:00",
+      }];
+    },
+  };
+  const root = documentMock();
+  root.addEventListener = () => {};
+  const mount = root.createElement("div");
+  mount.setAttribute("data-shared-auth-shell", "");
+  root.body.append(mount);
+  const previousSetInterval = globalThis.setInterval;
+  globalThis.setInterval = null;
+
+  try {
+    createHeaderAuthController({ root, storage, apiClient });
+    const requestsButton = root.querySelector("[data-my-requests]");
+
+    assert.ok(requestsButton);
+    assert.equal(requestsButton.hidden, false);
+    assert.ok(root.querySelector("[data-requests-modal]"));
+
+    requestsButton.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.deepEqual(calls, ["/adocoes/adotantes/7"]);
+    assert.equal(root.querySelector("[data-requests-modal]").hidden, false);
+    assert.match(root.body.className, /modal-open/);
+    assert.match(textTree(root.querySelector("[data-requests-modal]")), /Minhas Solicitações/);
+    assert.match(textTree(root.querySelector("[data-requests-modal]")), /Nina/);
+    assert.match(textTree(root.querySelector("[data-requests-modal]")), /Em análise/);
+  } finally {
+    globalThis.setInterval = previousSetInterval;
+  }
+});
+
+test("header auth controller cancels an active adopter request from the modal", async () => {
+  const storage = storageMock();
+  saveCurrentUser(storage, {
+    id: 7,
+    nome: "Mariana Costa",
+    cpf: "777.777.777-77",
+    email: "mariana@email.com",
+    tipo: "adotante",
+  });
+
+  const calls = [];
+  const apiClient = {
+    async get(path) {
+      calls.push({ method: "GET", path });
+      return [{
+        id: 12,
+        animalNome: "Nina",
+        status: "pendente",
+        dataSolicitacao: "2026-06-03T10:00:00",
+      }];
+    },
+    async post(path, body) {
+      calls.push({ method: "POST", path, body });
+      return {
+        id: 12,
+        animalNome: "Nina",
+        status: "cancelada",
+        dataSolicitacao: "2026-06-03T10:00:00",
+      };
+    },
+  };
+  const root = documentMock();
+  root.addEventListener = () => {};
+  const mount = root.createElement("div");
+  mount.setAttribute("data-shared-auth-shell", "");
+  root.body.append(mount);
+  const previousSetInterval = globalThis.setInterval;
+  globalThis.setInterval = null;
+
+  try {
+    createHeaderAuthController({ root, storage, apiClient });
+    root.querySelector("[data-my-requests]").click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const cancelButton = root.querySelector("[data-request-cancel]");
+    assert.ok(cancelButton);
+    assert.match(textTree(cancelButton), /Cancelar solicita/);
+
+    cancelButton.click();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    assert.deepEqual(calls, [
+      { method: "GET", path: "/adocoes/adotantes/7" },
+      { method: "POST", path: "/adocoes/12/cancelamento", body: { adotanteId: 7 } },
+    ]);
+    assert.match(textTree(root.querySelector("[data-requests-modal]")), /Cancelada/);
+    assert.equal(root.querySelector("[data-request-cancel]"), null);
+  } finally {
+    globalThis.setInterval = previousSetInterval;
+  }
+});
+
 test("shared auth shell renders reusable header and login modal", () => {
   const root = documentMock();
   const mount = root.createElement("div");
@@ -1021,6 +1273,74 @@ test("admin shared auth shell replaces the sidebar brand with administrative con
   const navText = textTree(root.querySelector(".nav-links"));
   assert.match(navText, /Inicio/);
   assert.doesNotMatch(navText, /Recomendados/);
+});
+
+test("admin menu button collapses and expands the fixed sidebar shell", () => {
+  const root = documentMock();
+  const mount = root.createElement("div");
+  mount.setAttribute("data-admin-page", "users");
+  root.body.append(mount);
+  const previousDocument = globalThis.document;
+  const previousSessionStorage = globalThis.sessionStorage;
+  const previousLocalStorage = globalThis.localStorage;
+  const previousWindow = globalThis.window;
+  globalThis.document = root;
+  globalThis.sessionStorage = storageMock({
+    "adotapet.admin.credentials": JSON.stringify({
+      email: "admin@adotapet.com",
+      senha: "admin123",
+    }),
+  });
+  globalThis.localStorage = storageMock();
+  globalThis.window = {
+    location: {
+      href: "admin-usuarios.html",
+    },
+  };
+
+  try {
+    const shellApi = createAdminShell({
+      active: "users",
+      title: "Usuarios",
+      content: root.createElement("section"),
+    });
+    const shell = root.querySelector("[data-admin-shell]");
+    const button = root.querySelector(".admin-menu-button");
+    const accountMenu = shell.querySelector(".admin-topbar-account-menu");
+    const accountTrigger = shell.querySelector("[data-account-trigger]");
+    const accountDropdown = shell.querySelector("[data-account-dropdown]");
+    const sidebarText = textTree(root.querySelector(".admin-sidebar-nav"));
+
+    assert.ok(shellApi);
+    assert.match(sidebarText, /Usuarios/);
+    assert.doesNotMatch(sidebarText, /Organiza|Comunicados|Mensagens/);
+    assert.equal(button.getAttribute("aria-expanded"), "true");
+    assert.ok(accountMenu);
+    assert.ok(accountDropdown);
+    assert.equal(accountTrigger.getAttribute("aria-expanded"), "false");
+
+    button.click();
+
+    assert.match(shell.className, /admin-sidebar-collapsed/);
+    assert.equal(button.getAttribute("aria-expanded"), "false");
+    assert.equal(button.getAttribute("aria-label"), "Expandir menu administrativo");
+
+    button.click();
+
+    assert.doesNotMatch(shell.className, /admin-sidebar-collapsed/);
+    assert.equal(button.getAttribute("aria-expanded"), "true");
+    assert.equal(button.getAttribute("aria-label"), "Recolher menu administrativo");
+
+    accountTrigger.click();
+
+    assert.match(accountMenu.className, /account-menu-open/);
+    assert.equal(accountTrigger.getAttribute("aria-expanded"), "true");
+  } finally {
+    globalThis.document = previousDocument;
+    globalThis.sessionStorage = previousSessionStorage;
+    globalThis.localStorage = previousLocalStorage;
+    globalThis.window = previousWindow;
+  }
 });
 
 test("header auth controller mounts shared shell before wiring controls", () => {

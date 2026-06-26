@@ -3,53 +3,108 @@
   display: none;
 }
 
+.admin-shell-page {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .admin-shell-page .admin-shell {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 242px minmax(0, 1fr);
+  --admin-sidebar-open-width: 232px;
+  --admin-sidebar-collapsed-width: 76px;
+  --admin-sidebar-width: var(--admin-sidebar-open-width);
+  --admin-shell-content-gap: 24px;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: block;
+  overflow: hidden;
   background: var(--admin-bg);
   color: var(--admin-text);
   font-size: 15px;
 }
 
 .admin-shell-page .admin-sidebar {
-  position: sticky;
-  top: 0;
-  min-height: 100vh;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: var(--admin-sidebar-width);
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
   display: flex;
   flex-direction: column;
-  gap: 26px;
-  padding: 24px 12px 18px;
-  overflow: hidden;
+  gap: 0;
+  padding: 28px 14px 15px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
   border-right: 0;
   background:
-    radial-gradient(circle at 80% 6%, rgba(36, 173, 115, 0.2), transparent 34%),
-    linear-gradient(160deg, var(--admin-sidebar) 0%, #005f41 46%, var(--admin-sidebar-dark) 100%);
+    radial-gradient(circle at 63% 23%, rgba(15, 122, 82, 0.58), transparent 39%),
+    radial-gradient(circle at 26% 89%, rgba(10, 94, 72, 0.52), transparent 34%),
+    linear-gradient(180deg, #003d30 0%, #004c35 43%, #003729 100%);
   color: #ffffff;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04);
+  transition:
+    width 240ms var(--ease),
+    padding 240ms var(--ease);
+}
+
+.admin-shell-page .admin-sidebar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.admin-shell-page .admin-sidebar:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.admin-shell-page .admin-sidebar:hover::-webkit-scrollbar {
+  width: 5px;
+}
+
+.admin-shell-page .admin-sidebar:hover::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .admin-shell-page .admin-sidebar-logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 4px 13px;
+  min-height: 38px;
+  padding: 0 13px;
+  border-bottom: 0;
   color: #ffffff;
   text-decoration: none;
 }
 
 .admin-shell-page .admin-sidebar-logo img {
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
+  filter: brightness(0) saturate(100%) invert(67%) sepia(92%) saturate(1299%) hue-rotate(346deg) brightness(101%) contrast(101%);
 }
 
 .admin-shell-page .admin-sidebar-logo strong {
+  max-width: 150px;
+  overflow: hidden;
   display: flex;
   align-items: baseline;
   color: #ffffff;
-  font-size: 1.82rem;
+  font-size: 1.64rem;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: 0;
+  opacity: 1;
+  transition:
+    max-width 220ms var(--ease),
+    opacity 160ms var(--ease),
+    transform 220ms var(--ease);
 }
 
 .admin-shell-page .admin-sidebar-logo strong span {
@@ -59,42 +114,81 @@
 .admin-shell-page .admin-sidebar-nav {
   display: grid;
   gap: 8px;
+  margin-top: 43px;
 }
 
 .admin-shell-page .admin-sidebar-nav a,
 .admin-shell-page .admin-nav-group > button {
   width: 100%;
-  min-height: 46px;
+  min-height: 44px;
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
+  grid-template-columns: 21px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  border: 0;
-  border-radius: 7px;
+  padding: 0 15px;
+  border: 1px solid transparent;
+  border-radius: 6px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.93);
+  color: rgba(255, 255, 255, 0.92);
   font: inherit;
+  font-size: 0.92rem;
   font-weight: 700;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
   transform: none;
+  transition:
+    background 160ms var(--ease),
+    color 160ms var(--ease),
+    padding 240ms var(--ease),
+    gap 240ms var(--ease);
+}
+
+.admin-shell-page .admin-sidebar-nav span {
+  max-width: 148px;
+  overflow: hidden;
+  opacity: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    max-width 220ms var(--ease),
+    opacity 160ms var(--ease),
+    transform 220ms var(--ease);
 }
 
 .admin-shell-page .admin-sidebar-nav a:hover,
 .admin-shell-page .admin-nav-group > button:hover,
 .admin-shell-page .admin-sidebar-nav .admin-sidebar-active {
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(30, 145, 98, 0.52);
   color: #ffffff;
   transform: none;
 }
 
+.admin-shell-page .admin-sidebar-nav .admin-sidebar-active {
+  border-color: rgba(45, 181, 126, 0.24);
+  background:
+    linear-gradient(90deg, rgba(46, 165, 112, 0.62), rgba(24, 133, 92, 0.48));
+  color: #ffffff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 9px 20px rgba(0, 0, 0, 0.08);
+}
+
 .admin-shell-page .admin-nav-icon {
-  width: 20px;
+  width: 19px;
+  height: 19px;
   display: inline-grid;
   place-items: center;
+  border-radius: 0;
+  background: transparent;
+  color: currentColor;
+  font-size: 1rem;
   text-align: center;
+}
+
+.admin-shell-page .admin-sidebar-active .admin-nav-icon {
+  background: transparent;
+  color: #ffffff;
 }
 
 .admin-shell-page .admin-nav-caret {
@@ -138,12 +232,6 @@
   font-weight: 600;
 }
 
-.admin-shell-page .admin-sidebar-footer {
-  display: grid;
-  gap: 24px;
-  margin-top: auto;
-}
-
 .admin-shell-page .admin-sidebar-theme,
 .admin-shell-page .admin-sidebar-account {
   width: 100%;
@@ -152,7 +240,7 @@
   gap: 10px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.07);
   color: #ffffff;
 }
 
@@ -182,10 +270,46 @@
   color: #27352f;
 }
 
+@media (min-width: 781px) {
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed {
+    --admin-sidebar-width: var(--admin-sidebar-collapsed-width);
+  }
+
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed .admin-sidebar {
+    padding-inline: 12px;
+  }
+
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed .admin-sidebar-logo {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed .admin-sidebar-logo strong,
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed .admin-sidebar-nav span {
+    max-width: 0;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed .admin-sidebar-nav a,
+  .admin-shell-page .admin-shell.admin-sidebar-collapsed .admin-nav-group > button {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0;
+    padding-inline: 0;
+  }
+}
+
 .admin-shell-page .admin-shell-main {
   min-width: 0;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   display: grid;
   grid-template-rows: 72px minmax(0, 1fr);
+  margin-left: calc(var(--admin-sidebar-width) + var(--admin-shell-content-gap));
+  overflow: hidden;
+  transition: margin-left 240ms var(--ease);
 }
 
 .admin-shell-page .admin-topbar {
@@ -253,6 +377,9 @@
 
 .admin-shell-page .admin-content-frame {
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 27px 28px 40px;
 }
 
@@ -361,25 +488,6 @@
 }
 
 @media (max-width: 1060px) {
-  .admin-shell-page .admin-shell {
-    grid-template-columns: 88px minmax(0, 1fr);
-  }
-
-  .admin-shell-page .admin-sidebar-logo strong,
-  .admin-shell-page .admin-sidebar-nav span,
-  .admin-shell-page .admin-sidebar-theme > span:not(.admin-theme-switch),
-  .admin-shell-page .admin-sidebar-account-text,
-  .admin-shell-page .admin-sidebar-account-arrow {
-    display: none;
-  }
-
-  .admin-shell-page .admin-sidebar-nav a,
-  .admin-shell-page .admin-nav-group > button,
-  .admin-shell-page .admin-sidebar-theme,
-  .admin-shell-page .admin-sidebar-account {
-    justify-content: center;
-  }
-
   .admin-shell-page .admin-overview-lower-grid,
   .admin-shell-page .admin-right-rail {
     grid-template-columns: 1fr;
@@ -387,13 +495,31 @@
 }
 
 @media (max-width: 780px) {
+  .admin-shell-page {
+    height: auto;
+    overflow: auto;
+  }
+
   .admin-shell-page .admin-shell {
-    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .admin-shell-page .admin-sidebar {
     position: static;
+    inset: auto;
+    width: auto;
+    height: auto;
     min-height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .admin-shell-page .admin-shell-main {
+    height: auto;
+    margin-left: 0;
+    overflow: visible;
   }
 
   .admin-shell-page .admin-topbar {
@@ -410,6 +536,7 @@
   }
 
   .admin-shell-page .admin-content-frame {
+    overflow: visible;
     padding: 18px 14px 28px;
   }
 

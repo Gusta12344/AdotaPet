@@ -31,20 +31,28 @@ export function fetchAdminUsers(client = api) {
   return client.get("/admin/usuarios", { auth: true });
 }
 
-export function fetchAdminUnreadMessages(client = api) {
-  return client.get("/admin/mensagens/nao-lidas", { auth: true });
-}
-
 export function createAdminUser(payload, client = api) {
   return client.post("/admin/usuarios", payload, { auth: true });
 }
 
-export function promoteAdminUser(id, client = api) {
-  return client.post(`/admin/usuarios/${id}/promover`, {}, { auth: true });
+export function updateAdminUser(id, payload, client = api) {
+  return client.put(`/admin/usuarios/${id}`, payload, { auth: true });
 }
 
-export function sendAdminMessage(payload, client = api) {
-  return client.post("/admin/mensagens", payload, { auth: true });
+export function deleteAdminUser(id, client = api) {
+  return client.delete(`/admin/usuarios/${id}`, { auth: true });
+}
+
+export function updateStandaloneAdminUser(id, payload, client = api) {
+  return client.put(`/admin/usuarios/admins/${id}`, payload, { auth: true });
+}
+
+export function deleteStandaloneAdminUser(id, client = api) {
+  return client.delete(`/admin/usuarios/admins/${id}`, { auth: true });
+}
+
+export function promoteAdminUser(id, client = api) {
+  return client.post(`/admin/usuarios/${id}/promover`, {}, { auth: true });
 }
 
 export function fetchAdminReport(formato, client = api) {

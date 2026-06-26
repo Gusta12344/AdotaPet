@@ -4,9 +4,11 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -18,6 +20,7 @@ import com.adotapet.backend.dto.AdminOverviewResponse;
 import com.adotapet.backend.dto.AdminRelatorioResponse;
 import com.adotapet.backend.dto.AdminUsuarioCreateRequest;
 import com.adotapet.backend.dto.AdminUsuarioResponse;
+import com.adotapet.backend.dto.AdminUsuarioUpdateRequest;
 import com.adotapet.backend.dto.AnimalResponse;
 import com.adotapet.backend.dto.NotificacaoResponse;
 import com.adotapet.backend.service.AdminAreaService;
@@ -57,6 +60,30 @@ public class AdminAreaController {
     @PostMapping("/usuarios/{id}/promover")
     public AdminUsuarioResponse promoverUsuario(@PathVariable Integer id) {
         return adminAreaService.promoverUsuario(id);
+    }
+
+    @PutMapping("/usuarios/{id}")
+    public AdminUsuarioResponse atualizarUsuario(@PathVariable Integer id,
+            @Valid @RequestBody AdminUsuarioUpdateRequest request) {
+        return adminAreaService.atualizarUsuario(id, request);
+    }
+
+    @PutMapping("/usuarios/admins/{id}")
+    public AdminUsuarioResponse atualizarAdministrador(@PathVariable Integer id,
+            @Valid @RequestBody AdminUsuarioUpdateRequest request) {
+        return adminAreaService.atualizarAdministrador(id, request);
+    }
+
+    @DeleteMapping("/usuarios/{id}")
+    public ResponseEntity<Void> excluirUsuario(@PathVariable Integer id) {
+        adminAreaService.excluirUsuario(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/usuarios/admins/{id}")
+    public ResponseEntity<Void> excluirAdministrador(@PathVariable Integer id) {
+        adminAreaService.excluirAdministrador(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/mensagens")

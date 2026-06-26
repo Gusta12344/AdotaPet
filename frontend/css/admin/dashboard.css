@@ -282,6 +282,41 @@
   cursor: pointer;
 }
 
+.admin-topbar-account-menu {
+  position: relative;
+  z-index: 35;
+}
+
+.admin-topbar-account-menu .profile-chip.admin-topbar-account {
+  min-height: 42px;
+  padding: 0 2px;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.admin-topbar-account-menu .account-dropdown {
+  z-index: 40;
+  min-width: 230px;
+}
+
+.admin-topbar-account-menu.account-menu-open .account-dropdown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+}
+
+.admin-topbar-account-menu .account-dropdown.admin-account-dropdown-open {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transform: translateY(0) scale(1) !important;
+  visibility: visible !important;
+}
+
+.admin-topbar-account-menu .account-dropdown button {
+  color: var(--admin-text);
+}
+
 .admin-topbar-avatar {
   width: 34px;
   height: 34px;

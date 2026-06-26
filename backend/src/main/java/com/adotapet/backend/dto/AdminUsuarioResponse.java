@@ -24,7 +24,8 @@ public record AdminUsuarioResponse(
         Especie preferenciaEspecie,
         LocalDateTime dataCadastro,
         boolean administrador,
-        Integer adminId
+        Integer adminId,
+        boolean somenteAdministrador
 ) {
     public static AdminUsuarioResponse fromEntity(Adotante adotante, Admin admin) {
         return new AdminUsuarioResponse(
@@ -42,7 +43,29 @@ public record AdminUsuarioResponse(
                 adotante.getPreferenciaEspecie(),
                 adotante.getDataCadastro(),
                 admin != null,
-                admin == null ? null : admin.getId()
+                admin == null ? null : admin.getId(),
+                false
+        );
+    }
+
+    public static AdminUsuarioResponse fromAdmin(Admin admin) {
+        return new AdminUsuarioResponse(
+                null,
+                admin.getNome(),
+                admin.getCpf(),
+                admin.getEmail(),
+                "",
+                "",
+                null,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null,
+                true,
+                admin.getId(),
+                true
         );
     }
 }

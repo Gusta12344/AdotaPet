@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS animal (
     descricao           TEXT,
     status              ENUM('disponivel', 'em_analise', 'adotado') NOT NULL DEFAULT 'disponivel',
     data_cadastro       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    data_atualizacao    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    data_disponivel_adocao DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    data_exclusao_agendada DATETIME NULL,
     protetor_id         INT          NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT fk_animal_protetor FOREIGN KEY (protetor_id)
@@ -102,9 +105,10 @@ CREATE TABLE IF NOT EXISTS solicitacao_adocao (
     animal_id         INT      NOT NULL,
     adotante_id       INT      NOT NULL,
     data_solicitacao  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    status            ENUM('pendente', 'em_analise', 'aprovada', 'recusada') NOT NULL DEFAULT 'pendente',
+    status            ENUM('pendente', 'em_analise', 'aprovada', 'recusada', 'cancelada', 'finalizada') NOT NULL DEFAULT 'pendente',
     data_inicio_analise DATETIME NULL,
     data_decisao      DATETIME NULL,
+    data_finalizacao  DATETIME NULL,
     admin_responsavel_id INT NULL,
     dados_adotante_conferidos TINYINT(1) NOT NULL DEFAULT 0,
     animal_disponivel_conferido TINYINT(1) NOT NULL DEFAULT 0,
@@ -129,7 +133,7 @@ CREATE TABLE IF NOT EXISTS solicitacao_moderacao_evento (
     id              INT NOT NULL AUTO_INCREMENT,
     solicitacao_id  INT NOT NULL,
     admin_id        INT NULL,
-    tipo            ENUM('solicitacao_enviada', 'analise_iniciada', 'checklist_atualizado', 'aprovada', 'recusada', 'recusa_automatica') NOT NULL,
+    tipo            ENUM('solicitacao_enviada', 'analise_iniciada', 'checklist_atualizado', 'aprovada', 'recusada', 'recusa_automatica', 'solicitacao_cancelada', 'adocao_finalizada', 'adocao_cancelada', 'finalizacao_revertida') NOT NULL,
     observacao      TEXT NULL,
     data_evento     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
@@ -178,6 +182,8 @@ CREATE TABLE IF NOT EXISTS adotante_favorito (
 
 CREATE INDEX idx_animal_status ON animal (status);
 CREATE INDEX idx_animal_especie ON animal (especie);
+CREATE INDEX idx_animal_disponivel_adocao ON animal (data_disponivel_adocao);
+CREATE INDEX idx_animal_exclusao_agendada ON animal (status, data_exclusao_agendada);
 CREATE INDEX idx_animal_imagem ON animal_imagem (animal_id, ordem);
 CREATE INDEX idx_favorito_animal ON adotante_favorito (animal_id);
 CREATE INDEX idx_sol_animal_status ON solicitacao_adocao (animal_id, status);
@@ -185,19 +191,6 @@ CREATE INDEX idx_sol_data ON solicitacao_adocao (data_solicitacao);
 CREATE INDEX idx_sol_status_decisao ON solicitacao_adocao (status, data_decisao);
 CREATE INDEX idx_evento_solicitacao_data ON solicitacao_moderacao_evento (solicitacao_id, data_evento);
 CREATE INDEX idx_notificacao_adotante_lida ON notificacao (adotante_id, lida, data_criacao);
-
--- Atualizacao manual para bancos locais ja criados antes da Central de Moderacao:
--- ALTER TABLE solicitacao_adocao
---   MODIFY status ENUM('pendente', 'em_analise', 'aprovada', 'recusada') NOT NULL DEFAULT 'pendente',
---   ADD COLUMN data_inicio_analise DATETIME NULL,
---   ADD COLUMN data_decisao DATETIME NULL,
---   ADD COLUMN admin_responsavel_id INT NULL,
---   ADD COLUMN dados_adotante_conferidos TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN animal_disponivel_conferido TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN contato_revisado TINYINT(1) NOT NULL DEFAULT 0,
---   ADD COLUMN observacao_admin TEXT NULL,
---   ADD CONSTRAINT fk_solicitacao_admin_responsavel FOREIGN KEY (admin_responsavel_id) REFERENCES admin(id);
--- CREATE TABLE IF NOT EXISTS solicitacao_moderacao_evento (... conforme DDL acima ...);
 
 -- ============================================================
 --  DML — Dados de Exemplo
@@ -305,6 +298,10 @@ VALUES
     ('Gaia',   'outro', 'Coelha',         16,  'pequeno', 'femea', '2024-05-23', 'medio', 1, 0, 0, 0, 0, 1, 1, 1,
      'Gaia é uma coelha dócil, limpa e acostumada a ambientes internos.',
      'disponivel', 1);
+
+UPDATE animal
+   SET data_disponivel_adocao = TIMESTAMP(data_resgate, '08:00:00'),
+       data_atualizacao = COALESCE(data_cadastro, TIMESTAMP(data_resgate, '08:00:00'));
 
 -- ── adotantes ─────────────────────────────────────────────────
 -- senha dos adotantes de exemplo = "admin123" em BCrypt

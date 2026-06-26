@@ -1,4 +1,4 @@
-import { fetchAdminAnimals, fetchAdminOverview, fetchAdminUnreadMessages, fetchAdminUsers } from "../admin-api.js";
+import { fetchAdminAnimals, fetchAdminOverview, fetchAdminUsers } from "../admin-api.js";
 import { fetchModeracaoFila } from "../admin-moderacao-api.js";
 import { emptyState, showError } from "../admin-components.js";
 import { createAdminShell } from "../admin-shell.js";
@@ -19,11 +19,10 @@ async function loadOverview() {
   setFeedback(shell.feedback, "Carregando indicadores...");
   try {
     const resumo = await fetchAdminOverview();
-    const [animals, users, grupos, messages] = await Promise.all([
+    const [animals, users, grupos] = await Promise.all([
       safeFetch(fetchAdminAnimals, []),
       safeFetch(fetchAdminUsers, []),
       safeFetch(() => fetchModeracaoFila({ status: "", q: "", ordem: "mais_recentes" }), []),
-      safeFetch(fetchAdminUnreadMessages, []),
     ]);
 
     renderOverview({
@@ -31,7 +30,6 @@ async function loadOverview() {
       animals,
       users,
       requests: extractRequests(grupos),
-      messages,
     });
     setFeedback(shell.feedback, "");
   } catch (error) {
@@ -41,7 +39,6 @@ async function loadOverview() {
       animals: [],
       users: [],
       requests: [],
-      messages: [],
     });
   }
 }
@@ -54,11 +51,10 @@ async function safeFetch(fetcher, fallback) {
   }
 }
 
-function renderOverview({ resumo, animals, users, requests, messages }) {
+function renderOverview({ resumo, animals, users, requests }) {
   const recentAnimals = animals.slice(0, 5);
   const recentRequests = requests.slice(0, 5);
-  const unreadMessages = messages.slice(0, 5);
-  const recentActivity = buildRecentActivity({ animals, users, requests, messages: unreadMessages });
+  const recentActivity = buildRecentActivity({ animals, users, requests });
   const totalUsers = numberOrFallback(resumo.totalUsuarios, users.length);
 
   content.replaceChildren(
@@ -84,12 +80,8 @@ function renderOverview({ resumo, animals, users, requests, messages }) {
         ]),
       ]),
       element("aside", { className: "admin-right-rail", "aria-label": "Painéis rápidos" }, [
-        dashboardCard("Fila de moderação", "Ver todos", "admin-moderacao.html", [
+        dashboardCard("Fila de moderação", "Ver todos", "admin-solicitacoes.html", [
           moderationQueue(resumo),
-        ]),
-        dashboardCard("Mensagens não lidas", "Ver todas", "admin-mensagens.html", [
-          messagesList(unreadMessages),
-          element("a", { className: "admin-card-footer-link", href: "admin-mensagens.html", text: "Ir para mensagens" }),
         ]),
         dashboardCard("Relatórios rápidos", "", "", [
           quickReports(),
@@ -178,30 +170,12 @@ function moderationQueue(resumo) {
 }
 
 function queueItem(iconName, label, count, tone) {
-  return element("a", { className: "admin-queue-item", href: "admin-moderacao.html" }, [
+  return element("a", { className: "admin-queue-item", href: "admin-solicitacoes.html" }, [
     icon(iconName),
     element("span", { text: label }),
     element("strong", { className: `admin-count-pill admin-count-${tone}`, text: String(count) }),
     icon("fa-chevron-right"),
   ]);
-}
-
-function messagesList(messages) {
-  if (!messages.length) {
-    return emptyState("Nenhuma mensagem não lida", "As notificações pendentes dos usuários aparecerão aqui.");
-  }
-
-  return element("div", { className: "admin-message-list" }, messages.map((message) => (
-    element("a", { className: "admin-message-item", href: "admin-mensagens.html" }, [
-      element("span", { className: "admin-initials admin-message-initials", text: initials(message.adotanteNome) }),
-      element("span", { className: "admin-message-copy" }, [
-        element("strong", { text: message.adotanteNome || "Usuário" }),
-        element("small", { text: message.mensagem || message.titulo || "-" }),
-      ]),
-      element("time", { text: formatDateTime(message.dataCriacao) }),
-      element("span", { className: "admin-unread-dot", "aria-hidden": "true" }),
-    ])
-  )));
 }
 
 function activityList(activities) {
@@ -272,12 +246,11 @@ function extractRequests(grupos) {
   })));
 }
 
-function buildRecentActivity({ animals, users, requests, messages }) {
+function buildRecentActivity({ animals, users, requests }) {
   return [
     ...animals.map((animal) => activityItem("fa-paw", "green", `Animal cadastrado: ${animal.nome || "Animal"}`, animal.dataCadastro || animal.dataResgate)),
     ...requests.map((request) => activityItem("fa-clipboard-list", "orange", `Solicitação ${statusLabel(request.status).toLowerCase()} para ${request.animal}`, request.data)),
     ...users.map((user) => activityItem("fa-user", "green", `${user.administrador ? "Administrador" : "Usuário"} cadastrado: ${user.nome || "Usuário"}`, user.dataCadastro)),
-    ...messages.map((message) => activityItem("fa-envelope", "orange", `Mensagem não lida: ${message.titulo || message.mensagem || "Notificação"}`, message.dataCriacao)),
   ]
     .filter((activity) => activity.date)
     .sort((a, b) => timestamp(b.date) - timestamp(a.date))

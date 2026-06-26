@@ -47,4 +47,11 @@ public interface FavoritoAnimalRepository extends JpaRepository<FavoritoAnimal, 
              where favorito.animal.id = :animalId
             """)
     void deleteByAnimalId(@Param("animalId") Integer animalId);
+
+    @Modifying
+    @Query("""
+            delete from FavoritoAnimal favorito
+             where favorito.adotante.id = :adotanteId
+            """)
+    void deleteByAdotanteId(@Param("adotanteId") Integer adotanteId);
 }

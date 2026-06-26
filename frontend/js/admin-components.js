@@ -1,5 +1,54 @@
 import { clearNode, element, formatAge, formatBoolean, formatEnum, setFeedback } from "./ui.js";
 
+export function adminIcon(name) {
+  return element("i", { className: `fa-solid ${name} library-icon`, "aria-hidden": "true" });
+}
+
+export function adminField(label, control, extraClass = "") {
+  return element("label", { className: ["admin-field", extraClass].filter(Boolean).join(" ") }, [
+    element("span", { text: label }),
+    control,
+  ]);
+}
+
+export function adminFormSection(title, children, extraClass = "") {
+  return element("section", { className: ["admin-animal-form-section", extraClass].filter(Boolean).join(" ") }, [
+    element("h3", { text: title }),
+    element("div", { className: "admin-animal-section-grid" }, children),
+  ]);
+}
+
+export function adminFilterField(label, control) {
+  return element("label", { className: "filter-field" }, [
+    element("span", { text: label }),
+    control,
+  ]);
+}
+
+export function adminCheckField(label, controlOrName) {
+  const control = typeof controlOrName === "string"
+    ? element("input", { type: "checkbox", name: controlOrName })
+    : controlOrName;
+
+  return element("label", { className: "admin-check-field" }, [
+    control,
+    adminIcon("fa-check"),
+    element("span", { text: label }),
+  ]);
+}
+
+export function adminFilterSelect(name, options) {
+  return element("select", { name }, options.map(([value, label]) => (
+    element("option", { value, text: label })
+  )));
+}
+
+export function adminSelect(name, options) {
+  return element("select", { name, required: "required" }, options.map(([value, label]) => (
+    element("option", { value, text: label })
+  )));
+}
+
 export function adminCard(title, body = [], { className = "", action = null } = {}) {
   return element("section", { className: ["admin-card", className].filter(Boolean).join(" ") }, [
     element("div", { className: "admin-card-header" }, [
@@ -42,7 +91,9 @@ export function renderRows(target, items, renderItem, empty) {
 
 export function statusPill(value) {
   const normalized = String(value || "").toLowerCase();
-  const tone = normalized.includes("aprov") || normalized.includes("dispon")
+  const tone = normalized.includes("finaliz")
+    ? "neutral"
+    : normalized.includes("aprov") || normalized.includes("dispon")
     ? "success"
     : normalized.includes("recus") || normalized.includes("adotado")
       ? "danger"

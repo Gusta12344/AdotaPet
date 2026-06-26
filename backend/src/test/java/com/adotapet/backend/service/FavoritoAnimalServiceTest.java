@@ -105,6 +105,35 @@ class FavoritoAnimalServiceTest {
     }
 
     @Test
+    void listaFavoritosMostraDisponiveisEEmAnaliseMasOcultaAdotados() {
+        Adotante adotante = adotante(7);
+        Animal disponivel = animal(3);
+        disponivel.setNome("Mimi");
+        disponivel.setStatus(StatusAnimal.disponivel);
+        Animal emAnalise = animal(4);
+        emAnalise.setNome("Luna");
+        emAnalise.setStatus(StatusAnimal.em_analise);
+        Animal adotado = animal(5);
+        adotado.setNome("Thor");
+        adotado.setStatus(StatusAnimal.adotado);
+
+        when(adotanteRepository.existsById(7)).thenReturn(true);
+        when(favoritoAnimalRepository.findByAdotanteIdOrderByDataFavoritoDesc(7))
+                .thenReturn(List.of(
+                        new FavoritoAnimal(adotante, adotado),
+                        new FavoritoAnimal(adotante, emAnalise),
+                        new FavoritoAnimal(adotante, disponivel)));
+
+        var favoritos = favoritoAnimalService.listar(7);
+
+        assertEquals(2, favoritos.size());
+        assertEquals("Luna", favoritos.get(0).nome());
+        assertEquals(StatusAnimal.em_analise, favoritos.get(0).status());
+        assertEquals("Mimi", favoritos.get(1).nome());
+        assertEquals(StatusAnimal.disponivel, favoritos.get(1).status());
+    }
+
+    @Test
     void removeFavoritoExistente() {
         Adotante adotante = adotante(7);
         Animal animal = animal(3);

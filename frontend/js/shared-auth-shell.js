@@ -25,6 +25,11 @@ export function renderSharedAuthShell(root = document) {
     rendered = true;
   }
 
+  if (!root.querySelector?.("[data-requests-modal]")) {
+    root.body?.append(buildRequestsModal(documentRef));
+    rendered = true;
+  }
+
   return rendered;
 }
 
@@ -148,6 +153,18 @@ function buildAccountMenu(documentRef) {
         createIcon("building", { documentRef }),
       ]),
       el(documentRef, "button", {
+        text: "Minhas Solicitações",
+        attrs: {
+          type: "button",
+          role: "menuitem",
+          "data-my-requests": "",
+          "data-auth-private": "",
+          hidden: "",
+        },
+      }, [
+        createIcon("clipboard", { documentRef }),
+      ]),
+      el(documentRef, "button", {
         text: "Editar dados pessoais",
         attrs: { type: "button", role: "menuitem", "data-edit-profile": "" },
       }, [
@@ -221,6 +238,41 @@ function buildLoginForm(documentRef) {
       createIcon("arrow-right", { documentRef }),
     ]),
     registerLink,
+  ]);
+}
+
+function buildRequestsModal(documentRef) {
+  return el(documentRef, "div", {
+    className: "login-modal requests-modal",
+    attrs: { "data-requests-modal": "", hidden: "" },
+  }, [
+    el(documentRef, "button", {
+      className: "login-backdrop",
+      attrs: { type: "button", "aria-label": "Fechar minhas solicitações", "data-requests-close": "" },
+    }),
+    el(documentRef, "section", {
+      className: "login-dialog requests-dialog",
+      attrs: { role: "dialog", "aria-modal": "true", "aria-labelledby": "requests-title" },
+    }, [
+      el(documentRef, "button", {
+        className: "modal-close",
+        attrs: { type: "button", "aria-label": "Fechar minhas solicitações", "data-requests-close": "" },
+      }, [
+        createIcon("x", { documentRef }),
+      ]),
+      el(documentRef, "span", { className: "login-mark requests-mark", attrs: { "aria-hidden": "true" } }, [
+        createIcon("clipboard", { documentRef }),
+      ]),
+      el(documentRef, "div", { className: "login-heading requests-heading" }, [
+        el(documentRef, "h2", { text: "Minhas Solicitações", attrs: { id: "requests-title" } }),
+        el(documentRef, "p", { text: "Veja o status dos pedidos de adoção que você enviou." }),
+      ]),
+      el(documentRef, "p", {
+        className: "requests-feedback",
+        attrs: { role: "status", "data-requests-feedback": "" },
+      }),
+      el(documentRef, "div", { className: "requests-list", attrs: { "data-requests-list": "" } }),
+    ]),
   ]);
 }
 

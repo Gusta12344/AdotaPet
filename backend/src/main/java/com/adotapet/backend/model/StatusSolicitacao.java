@@ -4,5 +4,7 @@ public enum StatusSolicitacao {
     pendente,
     em_analise,
     aprovada,
-    recusada
+    recusada,
+    cancelada,
+    finalizada
 }
