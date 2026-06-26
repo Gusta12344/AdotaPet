@@ -13,7 +13,6 @@
   --admin-sidebar-open-width: 232px;
   --admin-sidebar-collapsed-width: 76px;
   --admin-sidebar-width: var(--admin-sidebar-open-width);
-  --admin-shell-content-gap: 24px;
   height: 100vh;
   height: 100dvh;
   min-height: 0;
@@ -307,7 +306,7 @@
   min-height: 0;
   display: grid;
   grid-template-rows: 72px minmax(0, 1fr);
-  margin-left: calc(var(--admin-sidebar-width) + var(--admin-shell-content-gap));
+  margin-left: var(--admin-sidebar-width);
   overflow: hidden;
   transition: margin-left 240ms var(--ease);
 }
@@ -322,7 +321,7 @@
   gap: 18px;
   padding: 0 28px;
   border-bottom: 1px solid var(--admin-border);
-  background: rgba(255, 255, 255, 0.94);
+  background: #ffffff;
   backdrop-filter: blur(16px);
 }
 

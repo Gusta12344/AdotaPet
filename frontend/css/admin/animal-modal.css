@@ -49,7 +49,7 @@
 .admin-modal-header h2 {
   margin: 0;
   color: var(--admin-text);
-  font-size: 1.08rem;
+  font-size: 1.3rem;
   font-weight: 900;
   line-height: 1.2;
 }
@@ -149,6 +149,7 @@
   padding: 18px 16px;
   border-right: 1px solid var(--admin-border);
   background: #f8faf9;
+  overflow-y: auto;
 }
 
 .admin-animal-modal-photo {
@@ -169,14 +170,14 @@
 .admin-animal-profile-heading h3 {
   margin: 0;
   color: var(--admin-text);
-  font-size: 1.08rem;
+  font-size: 1.3rem;
   font-weight: 900;
 }
 
 .admin-animal-profile-code,
 .admin-animal-photo-file {
   color: var(--admin-muted);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   font-weight: 850;
 }
 
@@ -184,23 +185,24 @@
   display: grid;
   gap: 10px;
   margin: 2px 0 0;
+  font-size: 1.7rem;
 }
 
 .admin-animal-profile-fact {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
-  column-gap: 10px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  column-gap: 12px;
   row-gap: 2px;
   align-items: center;
   min-width: 0;
   color: var(--admin-muted);
-  font-size: 0.86rem;
+  font-size: inherit;
 }
 
 .admin-animal-profile-fact .library-icon {
   grid-row: span 2;
   color: #66726d;
-  font-size: 0.95rem;
+  font-size: 1.34rem;
 }
 
 .admin-animal-profile-fact dt {
@@ -272,7 +274,7 @@
 .admin-animal-detail-section h3 {
   margin: 0;
   color: var(--admin-green-strong);
-  font-size: 0.92rem;
+  font-size: 1.2rem;
   font-weight: 900;
 }
 
@@ -295,7 +297,6 @@
   display: grid;
   gap: 5px;
   color: var(--admin-text);
-  font-size: 0.86rem;
   font-weight: 850;
 }
 
@@ -319,7 +320,6 @@
   background: #ffffff;
   color: var(--admin-text);
   font: inherit;
-  font-size: 0.9rem;
   font-weight: 700;
   box-shadow: none;
 }
@@ -436,6 +436,8 @@
 .admin-animal-detail-body {
   min-height: 0;
   overflow: hidden;
+  display: grid;
+  height: 100%;
 }
 
 .admin-animal-detail-main {
@@ -467,15 +469,16 @@
 
 .admin-animal-detail-row {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 8px 12px;
   align-items: start;
   color: var(--admin-text);
-  font-size: 0.88rem;
+  font-size: 0.9rem;
 }
 
 .admin-animal-detail-row dt {
   color: var(--admin-muted);
+  font-size: 0.78rem;
   font-weight: 850;
 }
 
@@ -483,12 +486,34 @@
   min-width: 0;
   margin: 0;
   overflow-wrap: anywhere;
+  font-size: 0.91rem;
   font-weight: 800;
+  line-height: 1.2;
 }
 
-.admin-animal-detail-row-wide {
-  grid-template-columns: 150px minmax(0, 1fr);
+/* Modal detalhes de animais — valores */
+.admin-animal-detail-dialog .admin-animal-detail-row dd {
+  font-size: 0.91rem;
 }
+
+/* Modal detalhes de usuário — valores */
+.admin-user-detail-layout .admin-animal-detail-row dt {
+  font-size: 0.78rem;
+}
+
+.admin-user-detail-layout .admin-animal-detail-row dd {
+  font-size: 0.92rem;
+}
+
+/* Modal revisar solicitações — contato e fila */
+.admin-request-review-layout .admin-animal-detail-row dt {
+  font-size: 0.8rem;
+}
+
+.admin-request-review-layout .admin-animal-detail-row dd {
+  font-size: 0.91rem;
+}
+
 
 .admin-animal-delete-modal .login-backdrop {
   background: rgba(16, 24, 22, 0.3);

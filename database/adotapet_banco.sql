@@ -1,21 +1,20 @@
--- ============================================================
---  AdotaPet – Script SQL Completo
---  IFC Campus Fraiburgo | ADS 3ª Fase | Grupo 2
---  Gustavo Huçulak | Estefani Santos 
--- ============================================================
+--  AdotaPet - Script SQL Completo
+--  IFC Campus Fraiburgo | ADS 3 Fase 
+--  Gustavo Huçulak 
 
--- ── Criação / seleção do banco ────────────────────────────────
+
+-- Criação do banco e seleção
 CREATE DATABASE IF NOT EXISTS adotapet
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
 USE adotapet;
 
--- ============================================================
---  DDL — Definição das Tabelas
--- ============================================================
 
--- ── 1. admin ─────────────────────────────────────────────────
+--  DDL - Definição das Tabelas
+
+
+-- 1. admin
 CREATE TABLE IF NOT EXISTS admin (
     id            INT          NOT NULL AUTO_INCREMENT,
     nome          VARCHAR(100) NOT NULL,
@@ -25,7 +24,7 @@ CREATE TABLE IF NOT EXISTS admin (
     PRIMARY KEY (id)
 );
 
--- ── 2. protetor ──────────────────────────────────────────────
+-- 2. protetor 
 CREATE TABLE IF NOT EXISTS protetor (
     id            INT          NOT NULL AUTO_INCREMENT,
     nome          VARCHAR(100) NOT NULL,
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS protetor (
     PRIMARY KEY (id)
 );
 
--- ── 3. animal ────────────────────────────────────────────────
+-- 3. animal 
 CREATE TABLE IF NOT EXISTS animal (
     id                  INT          NOT NULL AUTO_INCREMENT,
     nome                VARCHAR(100) NOT NULL,
@@ -67,7 +66,7 @@ CREATE TABLE IF NOT EXISTS animal (
         ON UPDATE CASCADE
 );
 
--- ── 4. adotante ──────────────────────────────────────────────
+-- 4. adotante 
 CREATE TABLE IF NOT EXISTS animal_imagem (
     id          INT           NOT NULL AUTO_INCREMENT,
     animal_id   INT           NOT NULL,
@@ -99,7 +98,7 @@ CREATE TABLE IF NOT EXISTS adotante (
     PRIMARY KEY (id)
 );
 
--- ── 5. solicitacao_adocao ─────────────────────────────────────
+-- 5. solicitacao_adocao 
 CREATE TABLE IF NOT EXISTS solicitacao_adocao (
     id                INT      NOT NULL AUTO_INCREMENT,
     animal_id         INT      NOT NULL,
@@ -147,7 +146,7 @@ CREATE TABLE IF NOT EXISTS solicitacao_moderacao_evento (
         ON UPDATE CASCADE
 );
 
--- ── Índices para performance ──────────────────────────────────
+-- Índices para performance
 CREATE TABLE IF NOT EXISTS notificacao (
     id              INT          NOT NULL AUTO_INCREMENT,
     adotante_id     INT          NOT NULL,
@@ -192,11 +191,10 @@ CREATE INDEX idx_sol_status_decisao ON solicitacao_adocao (status, data_decisao)
 CREATE INDEX idx_evento_solicitacao_data ON solicitacao_moderacao_evento (solicitacao_id, data_evento);
 CREATE INDEX idx_notificacao_adotante_lida ON notificacao (adotante_id, lida, data_criacao);
 
--- ============================================================
---  DML — Dados de Exemplo
--- ============================================================
+--  DML - Dados de Exemplo
 
--- ── admin (cpf 000.000.000-00, senha = "admin123" em BCrypt) ─────────────────────
+
+-- admin (cpf 000.000.000-00, senha = "admin123" em BCrypt)
 INSERT INTO admin (nome, email, cpf, senha) VALUES
     ('Administrador AdotaPet',
      'admin@adotapet.com',
@@ -207,13 +205,13 @@ ON DUPLICATE KEY UPDATE
     cpf = VALUES(cpf),
     senha = VALUES(senha);
 
--- ── protetores ────────────────────────────────────────────────
+-- protetores
 INSERT INTO protetor (nome, email, telefone) VALUES
     ('ONG Patinhas Felizes',   'patinhas@ong.com',   '(47) 99801-1111'),
     ('Abrigo Amigos de Patas', 'amigos@abrigo.com',  '(47) 99802-2222'),
     ('Protetora Ana Lima',     'ana.lima@gmail.com', '(47) 99803-3333');
 
--- ── animais ───────────────────────────────────────────────────
+-- animais 
 INSERT INTO animal (nome, especie, raca, idade_meses, porte, sexo, data_resgate, nivel_energia,
                     bom_com_criancas, bom_com_caes, bom_com_gatos, precisa_espaco,
                     microchip, castrado, vermifugado, vacinado,
@@ -303,7 +301,7 @@ UPDATE animal
    SET data_disponivel_adocao = TIMESTAMP(data_resgate, '08:00:00'),
        data_atualizacao = COALESCE(data_cadastro, TIMESTAMP(data_resgate, '08:00:00'));
 
--- ── adotantes ─────────────────────────────────────────────────
+-- adotantes 
 -- senha dos adotantes de exemplo = "admin123" em BCrypt
 INSERT INTO adotante (nome, cpf, senha, email, telefone, endereco,
                        tipo_moradia, tem_criancas, tem_outros_animais,
@@ -339,7 +337,7 @@ ON DUPLICATE KEY UPDATE
     preferencia_porte = VALUES(preferencia_porte),
     preferencia_especie = VALUES(preferencia_especie);
 
--- ── solicitações de adoção (fila) ────────────────────────────
+-- solicitações de adoção (fila)
 -- Simulando fila para Bolinha: Maria e Beatriz solicitaram
 INSERT INTO solicitacao_adocao (animal_id, adotante_id, data_solicitacao, status)
 VALUES
@@ -375,9 +373,9 @@ VALUES
     (4, 'adocao', 'Solicitacao aprovada', 'Sua solicitacao para adotar Duque foi aprovada.', 0,
      '2026-03-09 08:05:00', 'solicitacao_adocao', 5);
 
--- ============================================================
+
 --  SELECTs de verificação (executar para validar o script)
--- ============================================================
+
 
 -- Quantos animais por status
 SELECT status, COUNT(*) AS total
@@ -415,7 +413,3 @@ JOIN animal   a  ON sa.animal_id   = a.id
 JOIN adotante ad ON sa.adotante_id = ad.id
 WHERE sa.status = 'pendente'
 ORDER BY sa.data_solicitacao ASC;
-
--- ============================================================
---  Fim do script
--- ============================================================

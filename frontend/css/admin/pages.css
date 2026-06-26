@@ -1457,16 +1457,29 @@ html.admin-theme-dark .admin-status-danger {
 
 .admin-request-review-fact span {
   color: var(--admin-muted);
-  font-size: 0.78rem;
+  font-size: 1.05rem;
   font-weight: 850;
 }
 
 .admin-request-review-fact strong {
   overflow: hidden;
   color: var(--admin-text);
-  font-size: 0.9rem;
+  font-size: 1.2rem;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Modal revisar solicitações — profile side do animal */
+.admin-request-review-side .admin-animal-profile-facts {
+  font-size: 1.82rem;
+}
+
+.admin-request-review-side .admin-animal-profile-fact {
+  font-size: inherit;
+}
+
+.admin-request-review-side .admin-animal-profile-fact .library-icon {
+  font-size: 1.42rem;
 }
 
 .admin-request-check-grid {
@@ -1578,14 +1591,14 @@ html.admin-theme-dark .admin-status-danger {
 
 .admin-request-history-item strong {
   color: var(--admin-text);
-  font-size: 0.88rem;
+  font-size: 1.1rem;
 }
 
 .admin-request-history-item span,
 .admin-request-history-item p {
   margin: 0;
   color: var(--admin-muted);
-  font-size: 0.82rem;
+  font-size: 0.98rem;
 }
 
 .admin-request-review-actions {
